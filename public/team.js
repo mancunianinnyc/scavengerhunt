@@ -42,7 +42,7 @@ function statusCard(){
   const over = ST.taxis > ST.taxiLimit;
   const sides = ST.sides.length;
   return `<section class="c-status" aria-label="Progreso">
-    <div class="row"><div><div class="lbl">Tiempo</div><div class="t-timer" id="timer">${started?durS(elapsed()):'0:00:00'}</div></div>
+    <div class="row"><div><div class="lbl">${finishMs()?'Tiempo final':'Tiempo'}</div><div class="t-timer" id="timer">${started?durS(elapsed()):'0:00:00'}</div></div>
       ${finishMs()||!started?`<div class="c-taxi" style="border:0"><span class="lbl">Taxis</span><b>${ST.taxis}/${ST.taxiLimit}</b></div>`:`<button class="c-taxi ${over?'over':''}" id="taxiBtn" aria-label="Registrar un taxi"><span class="lbl">Taxis</span><b>${ST.taxis}/${ST.taxiLimit}</b></button>`}</div>
     <div class="t-bar" role="img" aria-label="${ST.progress.length} de 10 paradas">${segs}</div>
     <div class="row foot"><span class="team"><span class="dot" style="background:${esc(ST.team.color)}"></span><span>${esc(ST.team.name)} · ${cur?`parada <b>${cur}</b> de 10`:(started?'<b>10 de 10</b>':'por salir')}</span></span>${sides?`<button class="t-link" data-go="sides">Side quests · ${sides}</button>`:''}</div>
@@ -142,7 +142,14 @@ function body(){
     return ST.team.depart
       ? `<section class="c-cta"><div class="t-eyebrow">Parque de los Hippies</div><h2 class="t-h">Salen a las ${hm(departMs())}</h2><p class="t-p">Faltan <b class="mono" id="countdown"></b>. Su primera pista aparece aquí en cuanto salgan.</p>${mem}</section>`
       : `<section class="c-cta"><div class="t-eyebrow">Parque de los Hippies</div><h2 class="t-h">Esperando la salida</h2><p class="t-p">Los quizmasters les dan la señal. Su primera pista aparece aquí en cuanto salgan.</p>${mem}</section>`; }
-  if (sc==='done') return `<section class="c-cta"><div class="t-eyebrow">Destino final</div><h2 class="t-h">Reloj detenido</h2><p class="t-big">${durS(elapsed())}</p><p class="t-p">Pidan algo. Los puntajes se revelan cuando lleguen todos los equipos.</p>${redoNotice()}</section>`;
+  if (sc==='done') { const sides = ST.sides.filter(q => q.status && q.status !== 'rejected').length; const mem = ST.team.members || [];
+    return `<section class="c-cta fin"><div class="fin-medal" aria-hidden="true"><span>${ICON.check}</span></div>
+      <div class="t-eyebrow">Destino final</div><h2 class="t-h">¡Felicitaciones, ${esc(ST.team.name)}!</h2>
+      <p class="t-p">Completaron El Gran Scavenger Hunt de Bogotá.</p>
+      <div class="fin-clock"><span>Tiempo final</span><b>${durS(elapsed())}</b></div>
+      <div class="fin-stats"><div><b>10</b><span>paradas</span></div><div><b>${sides}</b><span>side quest${sides===1?'':'s'}</span></div><div><b>${ST.taxis}</b><span>taxi${ST.taxis===1?'':'s'}</span></div></div>
+      ${mem.length?`<p class="fin-mem">${mem.map(esc).join(' · ')}</p>`:''}
+      <p class="t-p">Pidan algo y celebren. Los puntajes y el equipo ganador se revelan cuando lleguen todos.</p>${redoNotice()}</section>`; }
   if (sc==='sides') return `<section class="c-cta"><div class="t-eyebrow">Side quests</div><h2 class="t-h">Puntos extra, a cambio de tiempo</h2><p class="t-p">Son opcionales. Cada equipo decide si vale la pena desviarse.</p>
       <div class="t-list">${ST.sides.map(q=>{ const lab = !q.status?'':q.status==='approved'?'<span class="chip ok">Aprobado</span>':q.status==='pending'?'<span class="chip pend">En revisión</span>':'<span class="chip bad">Rechazado</span>';
         return `<button class="t-card" data-go="side:${esc(q.id)}"><div class="row"><b>${esc(q.name)}</b>${lab}</div><span class="s">+${q.pts} pts · ${esc(sidePlace(q))} · opcional</span></button>`; }).join('')}</div>
