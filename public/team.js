@@ -225,8 +225,8 @@ async function refresh(force){
 
 (async function start(){
   TOKEN = readToken();
-  if (!TOKEN) return fatal('Abran el link de su equipo. Se los mandamos por WhatsApp.');
-  try { await load(); } catch(e) { return fatal(errMsg(e)); }
+  if (!TOKEN) return Landing.show(false);
+  try { await load(); } catch(e) { return e.code === 'bad_token' ? Landing.show(true) : fatal(errMsg(e)); }
   document.title = `${ST.team.name} · El Gran Scavenger Hunt`;
   render();
   setInterval(tick, 1000);
