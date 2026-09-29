@@ -142,12 +142,12 @@ function body(){
       ? `<section class="c-cta"><div class="t-eyebrow">Parque de los Hippies</div><h2 class="t-h">Salen a las ${hm(departMs())}</h2><p class="t-p">Faltan <b class="mono" id="countdown"></b>. Su primera pista aparece aquí en cuanto salgan.</p>${mem}</section>`
       : `<section class="c-cta"><div class="t-eyebrow">Parque de los Hippies</div><h2 class="t-h">Esperando la salida</h2><p class="t-p">Los quizmasters les dan la señal. Su primera pista aparece aquí en cuanto salgan.</p>${mem}</section>`; }
   if (sc==='done') return `<section class="c-cta"><div class="t-eyebrow">Destino final</div><h2 class="t-h">Reloj detenido</h2><p class="t-big">${durS(elapsed())}</p><p class="t-p">Pidan algo. Los puntajes se revelan cuando lleguen todos los equipos.</p>${redoNotice()}</section>`;
-  if (sc==='sides') return `<section class="c-cta"><div class="t-eyebrow">Side quests</div><h2 class="t-h">Puntos extra, a cambio de tiempo</h2>
+  if (sc==='sides') return `<section class="c-cta"><div class="t-eyebrow">Side quests</div><h2 class="t-h">Puntos extra, a cambio de tiempo</h2><p class="t-p">Son opcionales. Cada equipo decide si vale la pena desviarse.</p>
       <div class="t-list">${ST.sides.map(q=>{ const lab = !q.status?'':q.status==='approved'?'<span class="chip ok">Aprobado</span>':q.status==='pending'?'<span class="chip pend">En revisión</span>':'<span class="chip bad">Rechazado</span>';
-        return `<button class="t-card" data-go="side:${esc(q.id)}"><div class="row"><b>${esc(q.name)}</b>${lab}</div><span class="s">+${q.pts} pts · ${esc(q.place)}</span></button>`; }).join('')}</div>
+        return `<button class="t-card" data-go="side:${esc(q.id)}"><div class="row"><b>${esc(q.name)}</b>${lab}</div><span class="s">+${q.pts} pts · ${esc(q.place)} · opcional</span></button>`; }).join('')}</div>
       <div class="t-actions"><button class="t-link" data-go="stop">${ST.current?'Volver a la pista':'Volver'}</button></div></section>`;
   if (sc.startsWith('side:')) { const q = ST.sides.find(x=>x.id===sc.slice(5)); if (!q) { screen='sides'; return body(); } const open = !q.status || q.status==='rejected';
-    return `<section class="c-cta"><div class="t-eyebrow">Side quest · +${q.pts} pts</div><h3 class="t-h">${esc(q.ask)}</h3><p class="t-p">${esc(q.place)}${q.note?` · ${esc(q.note)}`:''}</p>
+    return `<section class="c-cta"><div class="t-eyebrow">Side quest opcional · +${q.pts} pts</div><h3 class="t-h">${esc(q.ask)}</h3><p class="t-p">${esc(q.place)}${q.note?` · ${esc(q.note)}`:''}</p>
       ${open?`${dropInput(q.id,'photo')}<div class="err" id="err-${esc(q.id)}"></div><button class="t-primary terra" data-submit="${esc(q.id)}" ${busy?'disabled':''}><span>${busy?'Enviando…':'Enviar'}</span>${arrow}</button>`:`<p><span class="chip ${q.status==='approved'?'ok':'pend'}">${q.status==='approved'?'Aprobado':'En revisión'}</span></p>`}
       <div class="t-actions"><button class="t-link" data-go="sides">Volver</button></div></section>`; }
   if (sc.startsWith('redo:')) { const p = ST.progress.find(x=>x.n===+sc.slice(5)); if (!p || p.status!=='rejected') { screen='stop'; return body(); } const key='s'+p.n;
@@ -162,7 +162,10 @@ function overlay(){
   if (celebration) { const c = celebration;
     return `<div class="celebrate" role="dialog" aria-modal="true" aria-labelledby="celH"><div class="burst">${ICON.check}</div>
       ${c.eyebrow?`<div class="eyebrow">${esc(c.eyebrow)}</div>`:''}<h2 id="celH">${esc(c.title)}</h2><p>${esc(c.body)}</p>
-      ${c.side?`<button class="t-card" id="celSide"><span class="t-eyebrow" style="font-size:11px;color:var(--gold)">Side quest desbloqueado</span><b>${esc(c.side.name)}</b><span class="s">+${c.side.pts} pts · ${esc(c.side.place)}</span></button>`:''}
+      ${c.side?`<button class="t-card treasure" id="celSide" aria-label="Side quest opcional desbloqueado: ${esc(c.side.name)}, ${c.side.pts} puntos">
+        <span class="tr-shine" aria-hidden="true"></span>${[1,2,3,4].map(k => `<svg class="tr-spark k${k}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg>`).join('')}
+        <span class="tr-eyebrow">Side quest desbloqueado</span><b>${esc(c.side.name)}</b><span class="s">+${c.side.pts} pts · ${esc(c.side.place)}</span>
+        <span class="tr-opt">Opcional · puntos extra si deciden desviarse</span></button>`:''}
       <button class="t-primary" id="celGo"><span>${esc(c.cta)}</span>${arrow}</button></div>`; }
   if (modal) { const m = modal;
     return `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mH"><h3 id="mH">${esc(m.title)}</h3><p>${esc(m.body)}</p>
