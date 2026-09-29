@@ -1,0 +1,9 @@
+{
+  "name": "El Gran Scavenger Hunt de Bogotá",
+  "short_name": "Scavenger Hunt",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F6F3EC",
+  "theme_color": "#16347F",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
