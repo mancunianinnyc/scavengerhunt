@@ -97,13 +97,13 @@ function body(){
   else if (!ST.current && !(sc==='sides' || sc.startsWith('side:'))) sc = 'done';
   if (sc==='pre') { const mem = (ST.team.members||[]).length ? `<p class="t-p">Su equipo: ${ST.team.members.map(esc).join(' · ')}</p>` : '';
     return ST.team.depart
-      ? `<section class="c-cta"><div class="t-eyebrow">Parque Portugal</div><h2 class="t-h">Salen a las ${hm(departMs())}</h2><p class="t-p">Faltan <b class="mono" id="countdown"></b>. Su primera pista aparece aquí en cuanto salgan.</p>${mem}</section>`
-      : `<section class="c-cta"><div class="t-eyebrow">Parque Portugal</div><h2 class="t-h">Esperando la salida</h2><p class="t-p">Los quizmasters les dan la señal. Su primera pista aparece aquí en cuanto salgan.</p>${mem}</section>`; }
-  if (sc==='done') return `<section class="c-cta"><div class="t-eyebrow">FRANC</div><h2 class="t-h">Reloj detenido</h2><p class="t-big">${durS(elapsed())}</p><p class="t-p">Pidan algo. Los puntajes se revelan cuando lleguen todos los equipos.</p>${redoNotice()}</section>`;
+      ? `<section class="c-cta"><div class="t-eyebrow">Parque de los Hippies</div><h2 class="t-h">Salen a las ${hm(departMs())}</h2><p class="t-p">Faltan <b class="mono" id="countdown"></b>. Su primera pista aparece aquí en cuanto salgan.</p>${mem}</section>`
+      : `<section class="c-cta"><div class="t-eyebrow">Parque de los Hippies</div><h2 class="t-h">Esperando la salida</h2><p class="t-p">Los quizmasters les dan la señal. Su primera pista aparece aquí en cuanto salgan.</p>${mem}</section>`; }
+  if (sc==='done') return `<section class="c-cta"><div class="t-eyebrow">Destino final</div><h2 class="t-h">Reloj detenido</h2><p class="t-big">${durS(elapsed())}</p><p class="t-p">Pidan algo. Los puntajes se revelan cuando lleguen todos los equipos.</p>${redoNotice()}</section>`;
   if (sc==='sides') return `<section class="c-cta"><div class="t-eyebrow">Side quests</div><h2 class="t-h">Puntos extra, a cambio de tiempo</h2>
       <div class="t-list">${ST.sides.map(q=>{ const lab = !q.status?'':q.status==='approved'?'<span class="chip ok">Aprobado</span>':q.status==='pending'?'<span class="chip pend">En revisión</span>':'<span class="chip bad">Rechazado</span>';
         return `<button class="t-card" data-go="side:${esc(q.id)}"><div class="row"><b>${esc(q.name)}</b>${lab}</div><span class="s">+${q.pts} pts · ${esc(q.place)}</span></button>`; }).join('')}</div>
-      <div class="t-actions"><button class="t-link" data-go="stop">Volver a ${ST.current?'la pista':'FRANC'}</button></div></section>`;
+      <div class="t-actions"><button class="t-link" data-go="stop">${ST.current?'Volver a la pista':'Volver'}</button></div></section>`;
   if (sc.startsWith('side:')) { const q = ST.sides.find(x=>x.id===sc.slice(5)); if (!q) { screen='sides'; return body(); } const open = !q.status || q.status==='rejected';
     return `<section class="c-cta"><div class="t-eyebrow">Side quest · +${q.pts} pts</div><h3 class="t-h">${esc(q.ask)}</h3><p class="t-p">${esc(q.place)}${q.note?` · ${esc(q.note)}`:''}</p>
       ${open?`${dropInput(q.id,'photo')}<div class="err" id="err-${esc(q.id)}"></div><button class="t-primary terra" data-submit="${esc(q.id)}" ${busy?'disabled':''}><span>${busy?'Enviando…':'Enviar'}</span>${arrow}</button>`:`<p><span class="chip ${q.status==='approved'?'ok':'pend'}">${q.status==='approved'?'Aprobado':'En revisión'}</span></p>`}
@@ -179,7 +179,7 @@ async function submit(key, resubmit){
     if (!isStop) { screen = 'sides'; toast('Enviado a los quizmasters.'); return; }
     const side = ST.sides.find(s => !prevSides.has(s.id));
     celebration = wasFinish
-      ? {eyebrow:'FRANC', title:'¡Llegaron!', body:`Reloj detenido en ${durS(elapsed())}. Pidan algo: los puntajes se revelan cuando lleguen todos.`, cta:'Ver nuestro tiempo', fx:'big'}
+      ? {eyebrow:'Destino final', title:'¡Llegaron!', body:`Reloj detenido en ${durS(elapsed())}. Pidan algo: los puntajes se revelan cuando lleguen todos.`, cta:'Ver nuestro tiempo', fx:'big'}
       : {eyebrow:`Parada ${n} completa`, title: kind==='phrase' ? '¡Frase correcta!' : '¡Reto enviado!', body: kind==='phrase' ? 'Exacto. La siguiente pista ya está desbloqueada.' : 'Los quizmasters revisan su prueba. Mientras tanto, sigan.', cta:`Pista ${curN()}`, side, fx: kind==='phrase' ? 'normal' : 'small'};
     screen = 'stop';
   });

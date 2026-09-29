@@ -57,7 +57,7 @@ const Motion = (() => {
   }
   function run(){ if (!raf) { last = performance.now(); raf = requestAnimationFrame(step); } }
 
-  // size: 'small' (correct phrase), 'normal' (check-in), 'big' (FRANC)
+  // size: 'small' (correct phrase), 'normal' (check-in), 'big' (finale)
   function confetti(size = 'normal'){
     if (reduce()) return;
     ensure();
