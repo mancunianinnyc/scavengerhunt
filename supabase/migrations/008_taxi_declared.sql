@@ -1,0 +1,1 @@
+-- 008 (applied 2026-09-29): teams.taxi_declared(+_at); hunt_taxi_confirm(p_token,p_count) after finish; exposed in hunt_state/hunt_admin_state; reset/jump clear it. Scoring uses declared ?? logged.

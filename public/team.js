@@ -126,6 +126,18 @@ function checkLetters(){
   });
 }
 const sidePlace = q => q.place || 'ubicación secreta';
+
+/* After the clock stops: confirm or correct the taxi count. */
+let tc = null;
+function taxiConfirmHTML(){
+  if (ST.team.taxiDeclared != null) return `<div class="fin-taxi done"><span>${ICON.check}</span>Taxis confirmados: <b>${ST.team.taxiDeclared}</b></div>`;
+  if (tc == null) tc = ST.taxis;
+  const same = tc === ST.taxis;
+  return `<div class="fin-taxi"><b>Confirmen sus taxis</b>
+    <p>Registramos ${ST.taxis} taxi${ST.taxis===1?'':'s'} en la app. ¿Cuántos tomaron en total? Sean honestos: si alguno no quedó registrado, corríjanlo aquí.</p>
+    <div class="stepper"><button id="tcMinus" aria-label="Uno menos" ${tc<=0?'disabled':''}>−</button><span aria-live="polite">${tc}</span><button id="tcPlus" aria-label="Uno más" ${tc>=30?'disabled':''}>+</button></div>
+    <button class="t-primary" id="tcSave" ${busy?'disabled':''}><span>${same ? `Sí, fueron ${tc}` : `Confirmar ${tc} taxi${tc===1?'':'s'}`}</span>${arrow}</button></div>`;
+}
 function hintCard(){
   const c = ST.current;
   if (c.hint) return `<section class="c-hint used"><span class="lbl">Pista · parada ${c.n}</span><p>${esc(c.hint)}</p><small class="muted">Usaron la pista: esta parada no suma puntos.</small></section>`;
@@ -147,7 +159,8 @@ function body(){
       <div class="t-eyebrow">Destino final</div><h2 class="t-h">¡Felicitaciones, ${esc(ST.team.name)}!</h2>
       <p class="t-p">Completaron El Gran Scavenger Hunt de Bogotá.</p>
       <div class="fin-clock"><span>Tiempo final</span><b>${durS(elapsed())}</b></div>
-      <div class="fin-stats"><div><b>10</b><span>paradas</span></div><div><b>${sides}</b><span>side quest${sides===1?'':'s'}</span></div><div><b>${ST.taxis}</b><span>taxi${ST.taxis===1?'':'s'}</span></div></div>
+      <div class="fin-stats"><div><b>10</b><span>paradas</span></div><div><b>${sides}</b><span>side quest${sides===1?'':'s'}</span></div><div><b>${ST.team.taxiDeclared ?? ST.taxis}</b><span>taxi${(ST.team.taxiDeclared ?? ST.taxis)===1?'':'s'}</span></div></div>
+      ${taxiConfirmHTML()}
       ${mem.length?`<p class="fin-mem">${mem.map(esc).join(' · ')}</p>`:''}
       <p class="t-p">Pidan algo y celebren. Los puntajes y el equipo ganador se revelan cuando lleguen todos.</p>${redoNotice()}</section>`; }
   if (sc==='sides') return `<section class="c-cta"><div class="t-eyebrow">Side quests</div><h2 class="t-h">Puntos extra, a cambio de tiempo</h2><p class="t-p">Son opcionales. Cada equipo decide si vale la pena desviarse.</p>
@@ -265,6 +278,9 @@ function bind(){
     bx.oninput = () => { bx.value = bx.value.slice(-1).toUpperCase(); bx.classList.remove('bad','ok'); (puz.vals[curN()] ||= [])[i] = bx.value; if (puz.marks[curN()]) puz.marks[curN()][i] = null; if (bx.value && boxes[i+1]) boxes[i+1].focus(); };
     bx.onkeydown = e => { if (e.key === 'Backspace' && !bx.value && boxes[i-1]) { boxes[i-1].focus(); } if (e.key === 'Enter') { e.preventDefault(); checkLetters(); } };
   });
+  const tm = $('#tcMinus'); if (tm) tm.onclick = () => { tc = Math.max(0, tc - 1); render(); };
+  const tp = $('#tcPlus'); if (tp) tp.onclick = () => { tc = Math.min(30, tc + 1); render(); };
+  const ts = $('#tcSave'); if (ts) ts.onclick = () => act(async () => { await rpc('hunt_taxi_confirm', {p_token:TOKEN, p_count:tc}); await load(); toast('Gracias. Taxis confirmados.'); });
   const hb = $('#hintBtn'); if (hb) hb.onclick = () => { modal = {title:'¿Usar la pista?', body:'Si usan la pista, esta parada no suma puntos: 0 en vez de 10. El reloj sigue corriendo.', yes:'Sí, dame la pista', no:'Seguimos intentando', danger:true,
     onYes: () => act(async () => { await rpc('hunt_hint', {p_token:TOKEN}); await load(); toast('Pista desbloqueada. Esta parada queda en 0 puntos.'); })}; render(); };
   const tb = $('#taxiBtn'); if (tb) tb.onclick = () => { const k = ST.taxis; const extra = k >= ST.taxiLimit;

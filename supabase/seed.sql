@@ -91,3 +91,44 @@ Desde acá encontrarás buses hacia cualquier destino,
 vayan y compren un tiquete para el departamento vinculado a este datico:
 
 7 de agosto de 1819$q$ where id = 'terminal';
+
+-- Julia's revisions (2026-09-29): clue corrections and her own hints. Applied live; these override the rows above.
+update hunt.stops set hint = 'Una fachada en Plaza Bolívar...' where n = 1;
+update hunt.stops set clue = $q$Un ladrón en el gobierno,
+un ladrón en el banco,
+un ladrón en el techo,
+¡Ay qué escándalo!
+
+Los dos primeros se encuentran todos los días,
+el último, pintado por un famoso,
+¿dónde lo verías?$q$, hint = 'Un ladrón corpulento...' where n = 2;
+update hunt.stops set clue = $q$La pola toma su nombre
+de una chica y no de un hombre.
+Al lado de Los Andes y Las Aguas,
+rendimos homenaje a Policarpa.$q$, hint = 'Estás buscando una estatua' where n = 3;
+update hunt.stops set clue = $q$Nacido en Venezuela, muerto en Colombia,
+entre esas dos cosas, liberó cuatro.
+Pero no busca cuatro, sino un número más:
+una casa y un jardín,
+¿a dónde te vas?$q$, hint = '¿El libertador donde durmió?' where n = 4;
+update hunt.stops set clue = $q$Presidentes, un autor y una pintora.
+En el billete de $2.000 aparece Débora.
+En el mismo billete, al otro lado, encontrarán el nombre de un vecindario.
+Cerquita de allí, un poco al norte, hay una plaza con ajiaco para que uno devore.$q$,
+  hint = '¿Dónde almuerzan los domingos los habitantes de La Macarena?' where n = 5;
+update hunt.stops set clue = $q$En La Macarena el arquitecto puso tres torres,
+donde sus residentes han vivido mil historias,
+al frente, una librería verde contiene otras mil,
+pero esta librería tiene otras instalaciones.
+Encuéntrenla para que procedan.$q$, hint = '¿Dónde esta el otro sede de Matorral?' where n = 6;
+update hunt.stops set clue = $q$Cambiamos de libros a la televisión.
+Una personaje famosa en ese vecindario tenía habitación.
+Vayan a visitarla, la de gafas y brackets,
+y tomen una foto donde ella existía.$q$, hint = '¿Dónde vivía Betty?' where n = 7;
+update hunt.stops set clue = $q$Salmona no solo diseñó apartamentos,
+también diseñó un espacio para prestar libros.
+En un edificio redondo de ladrillo y con fuente,
+Nombrado por un presidente que buscó paz y constituyente.$q$, hint = 'La biblioteca de Barco' where n = 8;
+update hunt.stops set hint = '¿''La Capilla'' se encuentra en que discoteca?' where n = 9;
+update hunt.stops set hint = '''Franc''-ly, we need a drink!' where n = 10;
+update hunt.sides set after_stop = 7 where id = 'terminal';

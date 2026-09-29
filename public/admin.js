@@ -21,6 +21,7 @@ const team = id => TEAMS.find(t => t.id === id);
 const board = () => TEAMS.filter(t => S.showTests || !t.isTest);
 const linkFor = t => `${location.origin}/?t=${encodeURIComponent(t.token)}`;
 const taxiLimit = () => CFG.taxiLimit || 4;
+const taxiCount = t => t.taxiDeclared ?? t.taxis.length; // teams confirm/correct at the finish
 
 /* ---------- scoring ---------- */
 function finishT(t){ const f = t.subs.s10; return f && f.status !== 'rejected' ? f.t : null; }
@@ -39,7 +40,7 @@ function score(t, P){
   const quiz = Object.keys(QUIZ).reduce((a,q) => a + quizPts(t,q), 0);
   const side = SIDE.reduce((a,q) => a + (t.subs[q.id]?.status === 'approved' ? q.pts : 0), 0);
   const acts = ACTS.reduce((a,x) => a + (t.acts[x.id] ? x.pts : 0), 0) + (CFG.theatron === t.id ? HUNT.theatronBonus : 0);
-  const extraTaxis = Math.max(0, t.taxis.length - taxiLimit());
+  const extraTaxis = Math.max(0, taxiCount(t) - taxiLimit());
   const pen = extraTaxis * HUNT.taxiPenalty;
   const adj = Number(t.adj) || 0;
   return {stops, stopPts, place, placeN:P[t.id]?.place, quiz, side, acts, pen, extraTaxis, hintsUsed:t.hints.length, adj, total: stopPts + place + quiz + side + acts - pen + adj, finished: !!finishT(t)};
@@ -103,7 +104,7 @@ function leaderboardPanel(R){
     const c = currentStop(t);
     const where = t.depart == null ? 'waiting to start' : now() < t.depart ? `leaves ${hm(t.depart)}` : !c ? 'finished' : `→ ${c}. ${STOPS[c-1]?.name || ''}`;
     const row = `<tr class="lb" data-row="${esc(t.id)}"><td class="rank">${i+1}</td><td class="l"><div class="tname"><span class="dot" style="background:${esc(t.color)}"></span>${esc(t.name)}</div><div class="muted" style="font-size:12px">${esc(where)}</div></td>
-      <td>${s.stops}/10</td><td class="mono">${started(t)?dur(elapsed(t)):'—'}</td><td class="${s.extraTaxis?'neg':''}">${t.taxis.length}/${taxiLimit()}</td><td>${s.hintsUsed}</td>
+      <td>${s.stops}/10</td><td class="mono">${started(t)?dur(elapsed(t)):'—'}</td><td class="${s.extraTaxis?'neg':''}">${taxiCount(t)}/${taxiLimit()}${t.taxiDeclared!=null && t.taxiDeclared!==t.taxis.length?`<div class="muted" style="font-size:11px">logged ${t.taxis.length}</div>`:''}</td><td>${s.hintsUsed}</td>
       <td>${s.stopPts}</td><td>${s.placeN?`${s.place} <span class="muted">(${ord(s.placeN)})</span>`:'<span class="muted">—</span>'}</td><td>${s.quiz}</td><td>${s.side+s.acts}</td><td class="${s.pen?'neg':''}">${s.pen?'−'+s.pen:0}</td><td class="total">${s.total}</td></tr>`;
     const bd = S.expanded === t.id ? `<tr class="bd"><td></td><td colspan="11"><div class="bdgrid">
       <div><span>Stops approved</span><b>${s.stops}, ${s.hintsUsed} with hint · ${s.stopPts}</b></div>
@@ -111,6 +112,7 @@ function leaderboardPanel(R){
       ${Object.keys(QUIZ).map(q => `<div><span>${QUIZ[q].name}</span><b>${quizPts(t,q)}</b></div>`).join('')}
       ${SIDE.map(q => `<div><span>${esc(q.name)}</span><b>${t.subs[q.id]?.status==='approved'?q.pts:(t.subs[q.id]?t.subs[q.id].status:'—')}</b></div>`).join('')}
       <div><span>Drink can</span><b>${t.acts.can?10:0}</b></div><div><span>Theatron award</span><b>${CFG.theatron===t.id?HUNT.theatronBonus:0}</b></div>
+      <div><span>Taxis</span><b>${t.taxiDeclared!=null?`${t.taxiDeclared} declared · ${t.taxis.length} logged`:`${t.taxis.length} logged · not yet confirmed`}</b></div>
       <div><span>Taxi penalty</span><b class="${s.extraTaxis?'neg':''}">${s.extraTaxis} extra · −${s.pen}</b></div><div><span>Manual adjustment</span><b>${s.adj}</b></div>
       <div><span>Members</span><b style="white-space:normal;text-align:right">${esc(t.members.join(', ')) || '—'}</b></div>
     </div></td></tr>` : '';

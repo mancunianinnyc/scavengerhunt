@@ -410,3 +410,14 @@ td.total{font-family:var(--display);font-size:22px;color:var(--navy)}
   .fin-medal{animation:pop .55s cubic-bezier(.2,1.6,.4,1) both}
   .fin-medal::after{animation:spin 8s linear infinite}
 }
+
+/* ---------- finale: taxi confirmation ---------- */
+.fin-taxi{width:100%;border:1.5px solid var(--gold);background:#FFF8E6;border-radius:14px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.fin-taxi b{color:var(--navy);font-size:16px}
+.fin-taxi p{margin:0;font-size:14px;color:var(--ink-soft)}
+.fin-taxi.done{flex-direction:row;justify-content:center;gap:8px;border-color:var(--line);background:var(--ok-bg);color:var(--ok);font-weight:600;padding:10px}
+.fin-taxi.done span{display:flex}.fin-taxi.done svg{width:18px;height:18px}
+.stepper{display:flex;align-items:center;gap:14px}
+.stepper button{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--navy);background:var(--card);color:var(--navy);font-size:24px;line-height:1;display:flex;align-items:center;justify-content:center}
+.stepper button:disabled{opacity:.3}
+.stepper span{font-family:var(--display);font-size:36px;color:var(--navy);min-width:40px;text-align:center}
