@@ -1,0 +1,1 @@
+-- 009 (applied 2026-09-29): teams.name_by_team; hunt_team_name(p_token,p_name) before departure; nameSet/nameByTeam in state; admin rename resets name_by_team.

@@ -49,6 +49,26 @@ function ranked(){ const list = board(); const P = placements(list); return list
 const ord = n => n + (['st','nd','rd'][n-1] || 'th');
 
 /* ---------- views ---------- */
+/* Collapsible cards. Per-device memory; Teams auto-collapses once every event team is out,
+   unless someone toggled it after that happened. */
+let PANELS = {}; try { PANELS = JSON.parse(localStorage.getItem('hunt-admin-panels') || '{}'); } catch(_) {}
+const allOut = () => { const ev = TEAMS.filter(t => !t.isTest); return ev.length > 0 && ev.every(t => started(t)); };
+function isOpen(id){
+  const saved = PANELS[id];
+  if (id === 'teams') { const ctx = allOut(); return saved && saved.ctx === ctx ? saved.open : !ctx; }
+  return saved ? saved.open : true;
+}
+function togglePanel(id){
+  PANELS[id] = {open: !isOpen(id), ctx: id === 'teams' ? allOut() : null};
+  try { localStorage.setItem('hunt-admin-panels', JSON.stringify(PANELS)); } catch(_) {}
+  render();
+}
+function collapsible(id, html, summary){
+  const open = isOpen(id);
+  return html.replace('<section class="panel">', `<section class="panel ${open ? '' : 'collapsed'}" data-panel="${id}">`)
+    .replace(/<div class="panel-h"><h2>([\s\S]*?)<\/h2>/, (m, t) => `<div class="panel-h"><button class="ph-toggle" data-toggle="${id}" aria-expanded="${open}"><span class="chev" aria-hidden="true"></span><h2>${t}</h2>${summary ? `<span class="ph-sum">${summary}</span>` : ''}</button>`);
+}
+
 function departLabel(t){
   if (t.depart == null) return '<span class="chip idle">Waiting</span>';
   if (now() < t.depart) return `<span class="chip pend">Leaves ${hm(t.depart)} · in ${Math.max(1, Math.round((t.depart - now())/60000))} min</span>`;
@@ -58,7 +78,7 @@ function departLabel(t){
 function teamsPanel(){
   const rows = TEAMS.map(t => `<div class="tm" data-team-row="${esc(t.id)}">
       <div class="tm-id"><input type="color" value="${esc(t.color)}" data-color="${esc(t.id)}" aria-label="Team colour">
-        <input class="tm-name" value="${esc(t.name)}" data-name="${esc(t.id)}" aria-label="Team name">${t.isTest?'<span class="chip idle">test</span>':''}</div>
+        <input class="tm-name" value="${esc(t.name)}" data-name="${esc(t.id)}" aria-label="Team name">${t.isTest?'<span class="chip idle">test</span>':''}${t.nameByTeam?'<span class="chip ok" title="The team chose this name">their pick</span>':''}</div>
       <textarea class="tm-members" rows="2" data-members="${esc(t.id)}" placeholder="Members, one per line or comma-separated" aria-label="Members of ${esc(t.name)}">${esc(t.members.join(', '))}</textarea>
       <div class="tm-dep">${departLabel(t)}
         <div class="tm-btns">
@@ -71,7 +91,7 @@ function teamsPanel(){
         <button class="t-link tm-danger" data-reset="${esc(t.id)}">Reset progress</button><button class="t-link tm-danger" data-delete="${esc(t.id)}">Delete</button></div>
     </div>`).join('');
   const ev = TEAMS.filter(t => !t.isTest);
-  return `<section class="panel"><div class="panel-h"><h2>Teams &amp; departures</h2><p>Names and members save as you type. Each team's link opens its own view only.</p></div>
+  return `<section class="panel"><div class="panel-h"><h2>Teams &amp; departures</h2><p>Add members, then send each team its link. Teams choose their own name before they start (you can still override it). Names and members save as you type.</p></div>
     <div class="sched"><label for="schedFirst">First departure<input type="time" id="schedFirst" value="10:00"></label>
       <label for="schedGap">Minutes apart<input type="number" id="schedGap" min="0" max="120" value="${CFG.stagger ?? 10}"></label>
       <button class="btn sm" id="schedOrder">Schedule in this order</button><button class="btn sm ghost" id="schedShuffle">Shuffle order &amp; schedule</button>
@@ -166,8 +186,13 @@ function adminView(){
     <div class="kpi ${pend?'alert':''}"><div class="k">Proofs to review</div><div class="v num">${pend}</div><div class="s">${pend?'see the queue below':'queue clear'}</div></div>
     <div class="kpi"><div class="k">Leader right now</div><div class="v" style="font-size:22px">${R[0] ? esc(R[0].t.name) : '—'}</div><div class="s">${R[0] ? R[0].s.total + ' pts · hidden from teams' : ''}</div></div>
     <div class="kpi"><div class="k">Teams</div><div class="v num">${TEAMS.filter(t=>!t.isTest).length}</div><div class="s">${CFG.stagger ?? 10} min apart by default</div></div></div>`;
-  return `<div class="admin">${kpis}${queuePanel()}${leaderboardPanel(R)}${teamsPanel()}<div class="grid2">${scorePanel()}${rulesPanel()}</div>${matrixPanel()}
-    <section class="panel"><div class="panel-h"><h2>Finish &amp; reveal</h2><p>At the finish, run the reveal on a phone or laptop: last place first.</p></div><div class="demo-ctl"><button class="btn terra" id="revealBtn">Start the reveal</button></div></section></div>
+  const evT = TEAMS.filter(t => !t.isTest); const waiting = evT.filter(t => !started(t)).length;
+  const teamsSum = allOut() ? `all ${evT.length} out · last left ${hm(Math.max(...evT.map(t => t.depart)))}` : `${evT.length} teams · ${waiting} not started`;
+  const qSum = pend ? `${pend} waiting` : 'queue clear';
+  const lbSum = R[0] ? `leader: ${esc(R[0].t.name)} · ${R[0].s.total}` : '';
+  const st = team(S.scoreTeam);
+  return `<div class="admin">${collapsible('teams', teamsPanel(), teamsSum)}${kpis}${collapsible('queue', queuePanel(), qSum)}${collapsible('board', leaderboardPanel(R), lbSum)}<div class="grid2">${collapsible('score', scorePanel(), st ? esc(st.name) : '')}${collapsible('rules', rulesPanel(), 'v1 · 5 proposed')}</div>${collapsible('matrix', matrixPanel(), '')}
+    ${collapsible('reveal', `<section class="panel"><div class="panel-h"><h2>Finish &amp; reveal</h2><p>At the finish, run the reveal on a phone or laptop: last place first.</p></div><div class="demo-ctl"><button class="btn terra" id="revealBtn">Start the reveal</button></div></section>`, '')}</div>
     ${overlay()}`;
 }
 function overlay(){
@@ -212,6 +237,7 @@ function timeToday(hhmm, t){ // event teams: HH:MM on event day (until it passes
 }
 let scoreTimer;
 function bind(){
+  document.querySelectorAll('[data-toggle]').forEach(b => b.onclick = () => togglePanel(b.dataset.toggle));
   document.querySelectorAll('[data-row]').forEach(r => r.onclick = () => { S.expanded = S.expanded === r.dataset.row ? null : r.dataset.row; render(); });
   const decide = (v, status) => { const [id,k] = v.split('|'); doRpc('hunt_admin_review', {p_team:id, p_sub:k, p_status:status, p_note:null}, `${team(id)?.name}: ${status}.`); };
   document.querySelectorAll('[data-approve]').forEach(b => b.onclick = () => decide(b.dataset.approve, 'approved'));

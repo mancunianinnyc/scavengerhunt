@@ -421,3 +421,17 @@ td.total{font-family:var(--display);font-size:22px;color:var(--navy)}
 .stepper button{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--navy);background:var(--card);color:var(--navy);font-size:24px;line-height:1;display:flex;align-items:center;justify-content:center}
 .stepper button:disabled{opacity:.3}
 .stepper span{font-family:var(--display);font-size:36px;color:var(--navy);min-width:40px;text-align:center}
+
+.nm-input{font-family:var(--display);font-style:normal;font-size:24px}
+.name-card.set{padding-block:16px}
+
+/* ---------- admin: collapsible cards ---------- */
+.ph-toggle{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;border:0;background:none;padding:0;text-align:left;color:inherit;cursor:pointer;min-width:0}
+.ph-toggle h2{margin:0}
+.ph-toggle .chev{width:9px;height:9px;border-right:2px solid var(--navy);border-bottom:2px solid var(--navy);transform:rotate(45deg) translateY(-3px);transition:transform .2s;flex:none;align-self:center}
+.panel.collapsed .ph-toggle .chev{transform:rotate(-45deg)}
+.ph-sum{font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.panel.collapsed{padding-block:12px}
+.panel.collapsed .panel-h{margin-bottom:0}
+.panel.collapsed .panel-h > p,.panel.collapsed > :not(.panel-h){display:none}
+.panel:not(.collapsed) .ph-sum{display:none}

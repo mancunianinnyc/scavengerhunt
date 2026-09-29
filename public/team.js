@@ -7,6 +7,7 @@ const ICON = {
 };
 const arrow = '<span aria-hidden="true">→</span>';
 const MSG = {
+  already_started:'Ya salieron: el nombre quedó fijo.', bad_name:'El nombre debe tener entre 2 y 32 letras.',
   bad_token:'Este link no es válido. Pídanle uno nuevo a los quizmasters por WhatsApp.',
   offline:'Sin conexión. Revisen los datos del celular e intenten de nuevo.',
   too_large:'El archivo es muy pesado. Intenten con una foto o nota de voz más corta.',
@@ -138,6 +139,26 @@ function taxiConfirmHTML(){
     <div class="stepper"><button id="tcMinus" aria-label="Uno menos" ${tc<=0?'disabled':''}>−</button><span aria-live="polite">${tc}</span><button id="tcPlus" aria-label="Uno más" ${tc>=30?'disabled':''}>+</button></div>
     <button class="t-primary" id="tcSave" ${busy?'disabled':''}><span>${same ? `Sí, fueron ${tc}` : `Confirmar ${tc} taxi${tc===1?'':'s'}`}</span>${arrow}</button></div>`;
 }
+
+/* Before departure: the team names itself (editable until the quizmasters start them). */
+let editingName = false;
+function nameCard(){
+  if (ST.team.nameSet && !editingName) return `<section class="c-cta name-card set"><div class="t-eyebrow">Su equipo</div><h2 class="t-h">${esc(ST.team.name)}</h2>
+    <button class="t-link" id="nmEdit" style="align-self:flex-start">Cambiar el nombre</button></section>`;
+  return `<section class="c-cta name-card" id="cta"><div class="t-eyebrow">Primero lo primero</div><h2 class="t-h">¿Cómo se llama su equipo?</h2>
+    <p class="t-p">Pónganse de acuerdo y escríbanlo. Pueden cambiarlo hasta que salgan.</p>
+    <label class="vh" for="nmInput">Nombre del equipo</label><input class="t-input nm-input" id="nmInput" maxlength="32" autocomplete="off" placeholder="Los Rolos Perdidos" value="${esc(ST.team.nameSet ? ST.team.name : '')}">
+    <div class="err" id="err-nm"></div>
+    <button class="t-primary terra" id="nmSave" ${busy?'disabled':''}><span>${busy?'Guardando…':'Guardar nombre'}</span>${arrow}</button></section>`;
+}
+function saveName(){
+  const v = ($('#nmInput')?.value || '').trim().replace(/\s+/g, ' ');
+  if (v.length < 2) return shake('nm', 'Escriban un nombre de al menos 2 letras.');
+  let ok = false;
+  act(async () => { await rpc('hunt_team_name', {p_token:TOKEN, p_name:v}); await load(); ok = true; }).then(() => {
+    if (ok) { editingName = false; render(); Motion.confetti('small'); toast(`¡Bienvenidos, ${v}!`); }
+  });
+}
 function hintCard(){
   const c = ST.current;
   if (c.hint) return `<section class="c-hint used"><span class="lbl">Pista · parada ${c.n}</span><p>${esc(c.hint)}</p><small class="muted">Usaron la pista: esta parada no suma puntos.</small></section>`;
@@ -151,9 +172,9 @@ function body(){
   if (!started) sc = 'pre';
   else if (!ST.current && !(sc==='sides' || sc.startsWith('side:'))) sc = 'done';
   if (sc==='pre') { const mem = (ST.team.members||[]).length ? `<p class="t-p">Su equipo: ${ST.team.members.map(esc).join(' · ')}</p>` : '';
-    return ST.team.depart
+    return nameCard() + (ST.team.depart
       ? `<section class="c-cta"><div class="t-eyebrow">Parque de los Hippies</div><h2 class="t-h">Salen a las ${hm(departMs())}</h2><p class="t-p">Faltan <b class="mono" id="countdown"></b>. Su primera pista aparece aquí en cuanto salgan.</p>${mem}</section>`
-      : `<section class="c-cta"><div class="t-eyebrow">Parque de los Hippies</div><h2 class="t-h">Esperando la salida</h2><p class="t-p">Los quizmasters les dan la señal. Su primera pista aparece aquí en cuanto salgan.</p>${mem}</section>`; }
+      : `<section class="c-cta"><div class="t-eyebrow">Parque de los Hippies</div><h2 class="t-h">Esperando la salida</h2><p class="t-p">Los quizmasters les dan la señal. Su primera pista aparece aquí en cuanto salgan.</p>${mem}</section>`); }
   if (sc==='done') { const sides = ST.sides.filter(q => q.status && q.status !== 'rejected').length; const mem = ST.team.members || [];
     return `<section class="c-cta fin"><div class="fin-medal" aria-hidden="true"><span>${ICON.check}</span></div>
       <div class="t-eyebrow">Destino final</div><h2 class="t-h">¡Felicitaciones, ${esc(ST.team.name)}!</h2>
@@ -281,6 +302,9 @@ function bind(){
   const tm = $('#tcMinus'); if (tm) tm.onclick = () => { tc = Math.max(0, tc - 1); render(); };
   const tp = $('#tcPlus'); if (tp) tp.onclick = () => { tc = Math.min(30, tc + 1); render(); };
   const ts = $('#tcSave'); if (ts) ts.onclick = () => act(async () => { await rpc('hunt_taxi_confirm', {p_token:TOKEN, p_count:tc}); await load(); toast('Gracias. Taxis confirmados.'); });
+  const ns = $('#nmSave'); if (ns) ns.onclick = saveName;
+  const ni = $('#nmInput'); if (ni) ni.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); saveName(); } };
+  const ne = $('#nmEdit'); if (ne) ne.onclick = () => { editingName = true; render(); $('#nmInput')?.focus(); };
   const hb = $('#hintBtn'); if (hb) hb.onclick = () => { modal = {title:'¿Usar la pista?', body:'Si usan la pista, esta parada no suma puntos: 0 en vez de 10. El reloj sigue corriendo.', yes:'Sí, dame la pista', no:'Seguimos intentando', danger:true,
     onYes: () => act(async () => { await rpc('hunt_hint', {p_token:TOKEN}); await load(); toast('Pista desbloqueada. Esta parada queda en 0 puntos.'); })}; render(); };
   const tb = $('#taxiBtn'); if (tb) tb.onclick = () => { const k = ST.taxis; const extra = k >= ST.taxiLimit;
@@ -301,7 +325,7 @@ async function refresh(force){
   if (busy || modal || celebration) return;
   const before = sig();
   try { await load(); } catch(e) { return; }
-  const typing = document.activeElement?.tagName === 'TEXTAREA';
+  const typing = ['TEXTAREA','INPUT'].includes(document.activeElement?.tagName);
   if ((force || sig() !== before) && !typing) render();
 }
 
