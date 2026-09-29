@@ -435,3 +435,16 @@ td.total{font-family:var(--display);font-size:22px;color:var(--navy)}
 .panel.collapsed .panel-h{margin-bottom:0}
 .panel.collapsed .panel-h > p,.panel.collapsed > :not(.panel-h){display:none}
 .panel:not(.collapsed) .ph-sum{display:none}
+
+/* ---------- per-leg taxi question ---------- */
+.leg-q{display:flex;flex-direction:column;gap:10px;width:100%}
+.leg-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.leg-btns .t-primary{justify-content:center;text-align:center}
+.t-primary.alt{background:var(--card);color:var(--navy);border:1.5px solid var(--navy)}
+.leg-q.dark{max-width:360px;align-items:center;text-align:center}
+.leg-q.dark .t-h{color:var(--paper);font-size:26px}
+.leg-q.dark .t-p{color:rgba(246,243,236,.8)}
+.leg-q.dark .leg-btns{width:100%}
+.leg-q.dark .t-primary{background:var(--gold);color:var(--navy-deep)}
+.leg-q.dark .t-primary.alt{background:transparent;color:var(--paper);border-color:rgba(246,243,236,.6)}
+.leg-q.dark .t-primary.terra{background:var(--terracotta);color:var(--paper)}

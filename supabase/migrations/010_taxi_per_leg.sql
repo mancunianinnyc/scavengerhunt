@@ -1,0 +1,1 @@
+-- 010 (applied 2026-09-29): hunt.legs(team,stop,taxi) + taxis.stop; hunt_leg_taxi(p_token,p_taxi) after each check-in keeps the taxi count; legTaxi in hunt_state; reset/jump clear legs.

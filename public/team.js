@@ -44,7 +44,7 @@ function statusCard(){
   const sides = ST.sides.length;
   return `<section class="c-status" aria-label="Progreso">
     <div class="row"><div><div class="lbl">${finishMs()?'Tiempo final':'Tiempo'}</div><div class="t-timer" id="timer">${started?durS(elapsed()):'0:00:00'}</div></div>
-      ${finishMs()||!started?`<div class="c-taxi" style="border:0"><span class="lbl">Taxis</span><b>${ST.taxis}/${ST.taxiLimit}</b></div>`:`<button class="c-taxi ${over?'over':''}" id="taxiBtn" aria-label="Registrar un taxi"><span class="lbl">Taxis</span><b>${ST.taxis}/${ST.taxiLimit}</b></button>`}</div>
+      <div class="c-taxi ${over?'over':''}"><span class="lbl">Taxis</span><b>${ST.taxis}/${ST.taxiLimit}</b></div></div>
     <div class="t-bar" role="img" aria-label="${ST.progress.length} de 10 paradas">${segs}</div>
     <div class="row foot"><span class="team"><span class="dot" style="background:${esc(ST.team.color)}"></span><span>${esc(ST.team.name)} · ${cur?`parada <b>${cur}</b> de 10`:(started?'<b>10 de 10</b>':'por salir')}</span></span>${sides?`<button class="t-link" data-go="sides">Side quests · ${sides}</button>`:''}</div>
   </section>`;
@@ -78,6 +78,9 @@ function ctaCard(){
       ${redoNotice()}</section>`;
   }
   const key='s'+c.n;
+  if (c.legTaxi == null) return `<section class="c-cta" id="cta"><div class="t-eyebrow">Parada ${c.n} · Antes del reto</div>
+    <div class="t-ok">${ICON.check}<span>${ci.ok?'Check-in confirmado':'Check-in sin GPS'} · ${esc(ci.name)} · ${hm(ci.t)}</span></div>
+    ${legQuestionHTML()}</section>`;
   return `<section class="c-cta" id="cta"><div class="t-eyebrow">Parada ${c.n} · El reto</div>
     <div class="t-ok">${ICON.check}<span>${ci.ok?'Check-in confirmado':'Check-in sin GPS'} · ${esc(ci.name)} · ${hm(ci.t)}</span></div>
     ${c.puzzle ? puzzleHTML(c) : `<h3 class="t-h">${esc(c.ask)}</h3>${c.qm?`<p class="t-note">${esc(c.qm)}</p>`:''}
@@ -159,6 +162,21 @@ function saveName(){
     if (ok) { editingName = false; render(); Motion.confetti('small'); toast(`¡Bienvenidos, ${v}!`); }
   });
 }
+
+/* After every check-in: did this leg use a taxi? That answer is the taxi count. */
+function legQuestionHTML(dark){
+  const k = ST.taxis, next = k + 1, extra = next > ST.taxiLimit;
+  return `<div class="leg-q ${dark?'dark':''}"><h3 class="t-h">¿Llegaron en taxi?</h3>
+    <p class="t-p">Solo este tramo, desde la parada anterior. Llevan ${k} de ${ST.taxiLimit} taxis gratis.${extra?` Uno más resta ${HUNT.taxiPenalty} puntos.`:''}</p>
+    <div class="leg-btns"><button class="t-primary" data-leg="no" ${busy?'disabled':''}><span>No</span></button><button class="t-primary ${extra?'terra':'alt'}" data-leg="yes" ${busy?'disabled':''}><span>Sí, en taxi</span></button></div></div>`;
+}
+function answerLeg(taxi){
+  let r = null;
+  act(async () => { r = await rpc('hunt_leg_taxi', {p_token:TOKEN, p_taxi:taxi}); await load(); }).then(() => {
+    if (!r) return; celebration = null; render(); window.scrollTo(0,0);
+    toast(taxi ? `Taxi ${r.taxis} registrado${r.taxis > ST.taxiLimit ? ` (resta ${HUNT.taxiPenalty} pts)` : ''}.` : 'Anotado: sin taxi.');
+  });
+}
 function hintCard(){
   const c = ST.current;
   if (c.hint) return `<section class="c-hint used"><span class="lbl">Pista · parada ${c.n}</span><p>${esc(c.hint)}</p><small class="muted">Usaron la pista: esta parada no suma puntos.</small></section>`;
@@ -208,7 +226,7 @@ function overlay(){
         <span class="tr-shine" aria-hidden="true"></span>${[1,2,3,4].map(k => `<svg class="tr-spark k${k}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg>`).join('')}
         <span class="tr-eyebrow">Side quest desbloqueado</span><b>${esc(c.side.name)}</b><span class="s">+${c.side.pts} pts · ${esc(sidePlace(c.side))}</span>
         <span class="tr-opt">Opcional · puntos extra si deciden desviarse</span></button>`:''}
-      <button class="t-primary" id="celGo"><span>${esc(c.cta)}</span>${arrow}</button></div>`; }
+      ${c.taxiAsk && ST.current?.checkin && ST.current.legTaxi == null ? legQuestionHTML(true) : `<button class="t-primary" id="celGo"><span>${esc(c.cta)}</span>${arrow}</button>`}</div>`; }
   if (modal) { const m = modal;
     return `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mH"><h3 id="mH">${esc(m.title)}</h3><p>${esc(m.body)}</p>
       <div class="btns"><button class="t-primary ${m.danger?'terra':''}" id="mYes"><span>${esc(m.yes)}</span>${arrow}</button><button class="sec" id="mNo">${esc(m.no)}</button></div></div></div>`; }
@@ -237,7 +255,7 @@ function checkIn(){
     busy = false;
     await act(async () => {
       const r = await rpc('hunt_checkin', {p_token:TOKEN, p_lat:pos.coords.latitude, p_lng:pos.coords.longitude, p_acc:pos.coords.accuracy});
-      if (r.ok) { geo = {}; celebration = {eyebrow:`Parada ${n}`, title:'¡Correcto!', body:`Encontraron ${r.name}. Ahora, el reto.`, cta:'Ver el reto', fx:'normal'}; await load(); }
+      if (r.ok) { geo = {}; celebration = {eyebrow:`Parada ${n}`, title:'¡Correcto!', body:`Encontraron ${r.name}. Ahora, el reto.`, cta:'Ver el reto', fx:'normal', taxiAsk:true}; await load(); }
       else { geo = {miss:r.dist}; missFx = r.dist; }
     });
   }, () => { busy = false; geo = {fail:true}; render(); }, {enableHighAccuracy:true, timeout:15000, maximumAge:0});
@@ -245,7 +263,7 @@ function checkIn(){
 function manualCheckin(){
   const n = curN();
   act(async () => { const r = await rpc('hunt_checkin', {p_token:TOKEN, p_lat:null, p_lng:null, p_acc:null});
-    geo = {}; celebration = {eyebrow:`Parada ${n}`, title:'Check-in registrado', body:`Los quizmasters confirman que están en ${r.name}. Ahora, el reto.`, cta:'Ver el reto', fx:'small'}; await load(); });
+    geo = {}; celebration = {eyebrow:`Parada ${n}`, title:'Check-in registrado', body:`Los quizmasters confirman que están en ${r.name}. Ahora, el reto.`, cta:'Ver el reto', fx:'small', taxiAsk:true}; await load(); });
 }
 function shake(key, m){ const e = document.getElementById('err-'+key); if (e) e.textContent = m; else toast(m); Motion.nope($('#cta')); }
 async function submit(key, resubmit){
@@ -288,7 +306,7 @@ function bind(){
   const cb = $('#checkinBtn'); if (cb) cb.onclick = checkIn;
   const cm = $('#checkinManual'); if (cm) cm.onclick = manualCheckin;
   const sh = $('#simHere'); if (sh) sh.onclick = () => { const n = curN(); act(async () => { const r = await rpc('hunt_checkin_demo', {p_token:TOKEN});
-    geo = {}; celebration = {eyebrow:`Parada ${n}`, title:'¡Correcto!', body:`Encontraron ${r.name}. Ahora, el reto.`, cta:'Ver el reto', fx:'normal'}; await load(); }); };
+    geo = {}; celebration = {eyebrow:`Parada ${n}`, title:'¡Correcto!', body:`Encontraron ${r.name}. Ahora, el reto.`, cta:'Ver el reto', fx:'normal', taxiAsk:true}; await load(); }); };
   const sf = $('#simFar'); if (sf) sf.onclick = () => { const d = Math.round(600 + Math.random()*2400); geo = {miss:d}; missFx = d; render(); };
   const pc = $('#pzCheck'); if (pc) pc.onclick = checkLetters;
   document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { const n = curN(); const p = puz.pick[n] ||= []; const i = +b.dataset.pick; if (!p.includes(i)) p.push(i); render(); });
@@ -305,6 +323,7 @@ function bind(){
   const ns = $('#nmSave'); if (ns) ns.onclick = saveName;
   const ni = $('#nmInput'); if (ni) ni.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); saveName(); } };
   const ne = $('#nmEdit'); if (ne) ne.onclick = () => { editingName = true; render(); $('#nmInput')?.focus(); };
+  document.querySelectorAll('[data-leg]').forEach(b => b.onclick = () => answerLeg(b.dataset.leg === 'yes'));
   const hb = $('#hintBtn'); if (hb) hb.onclick = () => { modal = {title:'¿Usar la pista?', body:'Si usan la pista, esta parada no suma puntos: 0 en vez de 10. El reloj sigue corriendo.', yes:'Sí, dame la pista', no:'Seguimos intentando', danger:true,
     onYes: () => act(async () => { await rpc('hunt_hint', {p_token:TOKEN}); await load(); toast('Pista desbloqueada. Esta parada queda en 0 puntos.'); })}; render(); };
   const tb = $('#taxiBtn'); if (tb) tb.onclick = () => { const k = ST.taxis; const extra = k >= ST.taxiLimit;
