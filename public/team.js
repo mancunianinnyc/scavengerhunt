@@ -25,6 +25,7 @@ function readToken(){
 async function load(){
   ST = await rpc('hunt_state', {p_token: TOKEN});
   syncClock(ST.now);
+  if (ST.current && !ST.current.checkin && typeof puz !== 'undefined') { delete puz.letters[ST.current.n]; delete puz.vals[ST.current.n]; delete puz.marks[ST.current.n]; }
 }
 function sig(){ return ST ? JSON.stringify([ST.progress.map(p=>[p.n,p.status]), ST.sides.map(s=>[s.id,s.status]), ST.current?.n, !!ST.current?.checkin, ST.taxis, ST.team.name, ST.team.depart]) : ''; }
 
@@ -78,11 +79,44 @@ function ctaCard(){
   const key='s'+c.n;
   return `<section class="c-cta" id="cta"><div class="t-eyebrow">Parada ${c.n} · El reto</div>
     <div class="t-ok">${ICON.check}<span>${ci.ok?'Check-in confirmado':'Check-in sin GPS'} · ${esc(ci.name)} · ${hm(ci.t)}</span></div>
-    <h3 class="t-h">${esc(c.ask)}</h3>${c.qm?`<p class="t-note">${esc(c.qm)}</p>`:''}
+    ${c.puzzle ? puzzleHTML(c) : `<h3 class="t-h">${esc(c.ask)}</h3>${c.qm?`<p class="t-note">${esc(c.qm)}</p>`:''}
     ${proofField(key, c.proof)}<div class="err" id="err-${key}"></div>
-    <button class="t-primary terra" data-submit="${key}" ${busy?'disabled':''}><span>${busy?'Enviando…':c.finish?'Detener el reloj':c.proof==='phrase'?'Comprobar':'Enviar'}</span>${arrow}</button>
+    <button class="t-primary terra" data-submit="${key}" ${busy?'disabled':''}><span>${busy?'Enviando…':c.finish?'Detener el reloj':c.proof==='phrase'?'Comprobar':'Enviar'}</span>${arrow}</button>`}
     <details class="again" ontoggle="fitPoems(this)"><summary>Ver la pista otra vez</summary>${poemHTML(c.clue)}</details>
     ${redoNotice()}</section>`;
+}
+
+/* Stop-1 style puzzle: fill the missing letters (checked on the server), then unscramble them. */
+const puz = {vals:{}, letters:{}, marks:{}};
+try { Object.assign(puz.letters, JSON.parse(sessionStorage.getItem('hunt-puz') || '{}')); } catch(_) {}
+function puzzleHTML(c){
+  const n = c.n, key = 's'+n;
+  if (!puz.letters[n]) {
+    let i = -1;
+    const vals = puz.vals[n] || [], marks = puz.marks[n] || [];
+    const phrase = esc(c.puzzle).replace(/\[_\]/g, () => { i++; const m = marks[i]; return `<input class="pz-box ${m===true?'ok':m===false?'bad':''}" data-i="${i}" maxlength="1" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Letra ${i+1}" value="${esc(vals[i]||'')}">`; });
+    return `<h3 class="t-h">Completen la frase</h3><p class="t-p">Está grabada en la fachada del Palacio de Justicia. Escriban las letras que faltan.</p>
+      <p class="pz">${phrase}</p><div class="err" id="err-${key}"></div>
+      <button class="t-primary terra" id="pzCheck" ${busy?'disabled':''}><span>${busy?'Comprobando…':'Comprobar letras'}</span>${arrow}</button>`;
+  }
+  const L = puz.letters[n].split('');
+  return `<h3 class="t-h">Las letras esconden una palabra</h3><p class="t-p">Reorganícenlas y escriban la palabra para desbloquear la siguiente pista.</p>
+    <div class="pz-tiles" aria-label="Letras: ${L.join(' ')}">${L.map((ch,i) => `<span class="pz-tile" style="--i:${i}">${esc(ch)}</span>`).join('')}</div>
+    <textarea class="t-input pz-word" id="in-${key}" rows="1" placeholder="La palabra escondida…" autocapitalize="characters" spellcheck="false">${esc(drafts[key]||'')}</textarea>
+    <div class="err" id="err-${key}"></div>
+    <button class="t-primary terra" data-submit="${key}" ${busy?'disabled':''}><span>${busy?'Comprobando…':'Comprobar palabra'}</span>${arrow}</button>`;
+}
+function checkLetters(){
+  const n = curN(); const boxes = [...document.querySelectorAll('.pz-box')];
+  const vals = boxes.map(b => b.value.trim()); puz.vals[n] = vals;
+  if (vals.some(v => !v)) { shake('s'+n, 'Llenen todas las casillas.'); return; }
+  let res = null;
+  act(async () => { res = await rpc('hunt_check_letters', {p_token:TOKEN, p_letters:vals}); }).then(() => {
+    if (!res) return;
+    puz.marks[n] = res.boxes;
+    if (res.ok) { puz.letters[n] = res.letters; try { sessionStorage.setItem('hunt-puz', JSON.stringify(puz.letters)); } catch(_) {} render(); Motion.confetti('small'); }
+    else { render(); shake('s'+n, `${res.boxes.filter(x=>!x).length === 1 ? 'Una letra no es' : 'Algunas letras no son'} correcta${res.boxes.filter(x=>!x).length === 1 ? '' : 's'}. Miren la fachada otra vez.`); }
+  });
 }
 function hintCard(){
   const c = ST.current;
@@ -181,10 +215,10 @@ async function submit(key, resubmit){
     const side = ST.sides.find(s => !prevSides.has(s.id));
     celebration = wasFinish
       ? {eyebrow:'Destino final', title:'¡Llegaron!', body:`Reloj detenido en ${durS(elapsed())}. Pidan algo: los puntajes se revelan cuando lleguen todos.`, cta:'Ver nuestro tiempo', fx:'big'}
-      : {eyebrow:`Parada ${n} completa`, title: kind==='phrase' ? '¡Frase correcta!' : '¡Reto enviado!', body: kind==='phrase' ? 'Exacto. La siguiente pista ya está desbloqueada.' : 'Los quizmasters revisan su prueba. Mientras tanto, sigan.', cta:`Pista ${curN()}`, side, fx: kind==='phrase' ? 'normal' : 'small'};
+      : {eyebrow:`Parada ${n} completa`, title: kind==='phrase' ? (puz.letters[n] ? '¡MAESTRO!' : '¡Frase correcta!') : '¡Reto enviado!', body: kind==='phrase' ? 'Exacto. La siguiente pista ya está desbloqueada.' : 'Los quizmasters revisan su prueba. Mientras tanto, sigan.', cta:`Pista ${curN()}`, side, fx: kind==='phrase' ? 'normal' : 'small'};
     screen = 'stop';
   });
-  if (wrong) shake(key, 'Esa no es. Levanten los ojos otra vez.');
+  if (wrong) shake(key, ST.current?.puzzle ? 'Esa no es la palabra. Reorganicen las letras.' : 'Esa no es. Levanten los ojos otra vez.');
 }
 function bind(){
   document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
@@ -203,6 +237,12 @@ function bind(){
   const sh = $('#simHere'); if (sh) sh.onclick = () => { const n = curN(); act(async () => { const r = await rpc('hunt_checkin_demo', {p_token:TOKEN});
     geo = {}; celebration = {eyebrow:`Parada ${n}`, title:'¡Correcto!', body:`Encontraron ${r.name}. Ahora, el reto.`, cta:'Ver el reto', fx:'normal'}; await load(); }); };
   const sf = $('#simFar'); if (sf) sf.onclick = () => { const d = Math.round(600 + Math.random()*2400); geo = {miss:d}; missFx = d; render(); };
+  const pc = $('#pzCheck'); if (pc) pc.onclick = checkLetters;
+  const boxes = [...document.querySelectorAll('.pz-box')];
+  boxes.forEach((bx, i) => {
+    bx.oninput = () => { bx.value = bx.value.slice(-1).toUpperCase(); bx.classList.remove('bad','ok'); (puz.vals[curN()] ||= [])[i] = bx.value; if (puz.marks[curN()]) puz.marks[curN()][i] = null; if (bx.value && boxes[i+1]) boxes[i+1].focus(); };
+    bx.onkeydown = e => { if (e.key === 'Backspace' && !bx.value && boxes[i-1]) { boxes[i-1].focus(); } if (e.key === 'Enter') { e.preventDefault(); checkLetters(); } };
+  });
   const hb = $('#hintBtn'); if (hb) hb.onclick = () => { modal = {title:'¿Usar la pista?', body:'Si usan la pista, esta parada no suma puntos: 0 en vez de 10. El reloj sigue corriendo.', yes:'Sí, dame la pista', no:'Seguimos intentando', danger:true,
     onYes: () => act(async () => { await rpc('hunt_hint', {p_token:TOKEN}); await load(); toast('Pista desbloqueada. Esta parada queda en 0 puntos.'); })}; render(); };
   const tb = $('#taxiBtn'); if (tb) tb.onclick = () => { const k = ST.taxis; const extra = k >= ST.taxiLimit;

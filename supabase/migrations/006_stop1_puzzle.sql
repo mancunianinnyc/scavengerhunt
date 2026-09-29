@@ -1,0 +1,4 @@
+-- 006 (applied 2026-09-29): Julia's stop-1 mechanic. hunt.stops.puzzle holds the inscription with hidden letters in [x];
+-- stop 1: 'Colombianos, las a[r][m]as [o]s h[a]n dado la ind[e]pendencia; las leyes o[s] darán la liber[t]ad.'
+-- Hidden letters RMOAEST = anagram of MAESTRO; stop 1 answer_words = {maestro}.
+-- hunt_check_letters(p_token, p_letters text[]) checks the boxes server-side; hunt_state sends the puzzle masked ([_]) and only after check-in.
