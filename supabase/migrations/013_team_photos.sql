@@ -1,0 +1,1 @@
+-- 013 (applied 2026-09-30): hunt_team_photos(p_token) returns the team's own non-rejected photos (for the share card).

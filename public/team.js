@@ -180,6 +180,38 @@ function answerLeg(taxi){
     toast(taxi ? `Taxi ${r.taxis} registrado${r.taxis > ST.taxiLimit ? ` (resta ${HUNT.taxiPenalty} pts)` : ''}.` : 'Anotado: sin taxi.');
   });
 }
+
+/* Share card (finish screen): tap 1 builds the image, tap 2 opens the phone's share sheet. */
+const share = {status:'idle', card:null};
+async function makeShare(){
+  if (share.status === 'building') return;
+  share.status = 'building'; render();
+  try {
+    let photos = [];
+    try { photos = await rpc('hunt_team_photos', {p_token:TOKEN}) || []; } catch (_) {}
+    const nameOf = k => k === 's10' ? 'Destino final' : /^s\d+$/.test(k) ? (ST.progress.find(p => 's'+p.n === k)?.name || '') : (ST.sides.find(q => q.id === k)?.name || ''); // never name the final stop on a public card
+    const stopsFirst = photos.filter(p => /^s\d+$/.test(p.key)).concat(photos.filter(p => !/^s\d+$/.test(p.key)));
+    const pick = stopsFirst.length <= 4 ? stopsFirst : [0, 1, 2, 3].map(i => stopsFirst[Math.round(i * (stopsFirst.length - 1) / 3)]);
+    const sides = ST.sides.filter(q => q.status && q.status !== 'rejected').length;
+    share.card = await ShareCard.build({team: ST.team.name, time: durS(elapsed()), stops: ST.progress.length, sides, photos: pick.map(p => ({...p, label: nameOf(p.key)}))});
+    share.status = 'ready';
+  } catch (e) { share.status = 'idle'; toast('No pudimos crear la tarjeta. Intenten de nuevo.'); }
+  render();
+}
+async function doShare(){
+  const f = share.card?.file; if (!f) return;
+  try { await navigator.share({files: [f], title: 'El Gran Scavenger Hunt de Bogotá', text: `${ST.team.name} completó El Gran Scavenger Hunt de Bogotá en ${durS(elapsed())}.`}); }
+  catch (e) { if (e?.name !== 'AbortError') toast('No se pudo compartir. Guarden la imagen y súbanla.'); }
+}
+function shareHTML(){
+  if (share.status !== 'ready') return `<div class="fin-share"><button class="t-primary terra" id="shareMake" ${share.status==='building'?'disabled':''}><span>${share.status==='building'?'Creando su tarjeta…':'Crear tarjeta para compartir'}</span>${arrow}</button>
+    <p class="t-p" style="font-size:13px">Una imagen con su tiempo y sus fotos, lista para Instagram o WhatsApp.</p></div>`;
+  const can = ShareCard.canShareFiles(share.card.file);
+  return `<div class="fin-share"><img class="share-prev" src="${share.card.url}" alt="Tarjeta para compartir de ${esc(ST.team.name)}">
+    ${can ? `<button class="t-primary terra" id="shareGo"><span>Compartir</span>${arrow}</button>` : ''}
+    <a class="t-link" href="${share.card.url}" download="${esc(share.card.file.name)}">Guardar la imagen</a>
+    ${can ? '' : '<p class="t-p" style="font-size:13px">En iPhone, mantengan presionada la imagen para guardarla.</p>'}</div>`;
+}
 function hintCard(){
   const c = ST.current;
   if (c.hint) return `<section class="c-hint used"><span class="lbl">Pista · parada ${c.n}</span><p>${esc(c.hint)}</p><small class="muted">Usaron la pista: esta parada vale 5 puntos en vez de 10.</small></section>`;
@@ -203,6 +235,7 @@ function body(){
       <div class="fin-clock"><span>Tiempo final</span><b>${durS(elapsed())}</b></div>
       <div class="fin-stats"><div><b>10</b><span>paradas</span></div><div><b>${sides}</b><span>side quest${sides===1?'':'s'}</span></div><div><b>${ST.team.taxiDeclared ?? ST.taxis}</b><span>taxi${(ST.team.taxiDeclared ?? ST.taxis)===1?'':'s'}</span></div></div>
       ${taxiConfirmHTML()}
+      ${shareHTML()}
       ${mem.length?`<p class="fin-mem">${mem.map(esc).join(' · ')}</p>`:''}
       <p class="t-p">Pidan algo y celebren. Los puntajes y el equipo ganador se revelan cuando lleguen todos.</p>${redoNotice()}</section>`; }
   if (sc==='sides') return `<section class="c-cta"><div class="t-eyebrow">Side quests</div><h2 class="t-h">Puntos extra, a cambio de tiempo</h2><p class="t-p">Son opcionales. Cada equipo decide si vale la pena desviarse.</p>
@@ -328,6 +361,8 @@ function bind(){
   const ne = $('#nmEdit'); if (ne) ne.onclick = () => { editingName = true; render(); $('#nmInput')?.focus(); };
   document.querySelectorAll('[data-leg]').forEach(b => b.onclick = () => answerLeg(b.dataset.leg === 'yes'));
   const ph = $('#pzHelp'); if (ph) ph.onclick = () => { puz.help[curN()] = true; render(); };
+  const smk = $('#shareMake'); if (smk) smk.onclick = makeShare;
+  const sgo = $('#shareGo'); if (sgo) sgo.onclick = doShare;
   const hb = $('#hintBtn'); if (hb) hb.onclick = () => { modal = {title:'¿Usar la pista?', body:'Si usan la pista, esta parada vale la mitad: 5 puntos en vez de 10. El reloj sigue corriendo.', yes:'Sí, dame la pista', no:'Seguimos intentando', danger:true,
     onYes: () => act(async () => { await rpc('hunt_hint', {p_token:TOKEN}); await load(); toast('Pista desbloqueada. Esta parada vale 5 puntos.'); })}; render(); };
   const tb = $('#taxiBtn'); if (tb) tb.onclick = () => { const k = ST.taxis; const extra = k >= ST.taxiLimit;

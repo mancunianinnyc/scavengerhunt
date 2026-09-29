@@ -484,3 +484,8 @@ td.total{font-family:var(--display);font-size:22px;color:var(--navy)}
 .rv-strip figcaption{font-size:10.5px;color:#56608A;padding-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (prefers-reduced-motion:no-preference){.rv-strip figure{animation:unearth .6s var(--d) cubic-bezier(.2,1.3,.4,1) both}}
 @media (max-width:520px){.rv-strip figure{width:92px}.rv-strip img{width:80px;height:80px}}
+
+/* ---------- finish: share card ---------- */
+.fin-share{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;border-top:1px solid var(--line);padding-top:14px}
+.share-prev{width:100%;max-width:340px;border-radius:12px;box-shadow:0 10px 30px rgba(15,37,96,.25)}
+@media (prefers-reduced-motion:no-preference){.share-prev{animation:unearth .6s cubic-bezier(.2,1.3,.4,1) both}}

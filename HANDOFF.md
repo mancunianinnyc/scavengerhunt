@@ -46,7 +46,7 @@ _Read this first in any new session. Source of truth for content is the **databa
 4. **After check-in:** "¡Correcto!" + confetti → **"¿Llegaron en taxi?" Sí/No** (this *is* the taxi count) → the reto.
 5. **Retos:** photo upload, or typed text. Stop 1 = fill 7 missing letters of the Palacio de Justicia inscription (server-checked) → tap-to-spell anagram **MAESTRO** (free help: "Un experto es un…"). Stop 3 = "Aunque mujer y joven," pre-filled, type the rest (key words checked).
 6. **Side quests** unlock after stops 2 (coin), **7** (Terminal ticket — riddle, place hidden), 8 (prom photo); treasure-reveal animation; all marked optional.
-7. **Finish** (stop 10 photo stops the clock) → big confetti → congratulations card with frozen final time, tally, members, and **taxi confirmation** (declared count is what scores).
+7. **Finish** (stop 10 photo stops the clock) → big confetti → congratulations card with frozen final time, tally, members, **taxi confirmation** (declared count is what scores), and a **share card** (`sharecard.js`: 1080×1350 image with team, final time, up to 4 photos as polaroids, invite artwork → phone share sheet; stop 10's photo is captioned "Destino final", never the bar's name).
 8. Motion: confetti on correct, damped shake + distance count-up on wrong place; reduced-motion respected.
 
 **Test teams** (`is_test`): "Prueba Ross" (token `uluDxtfbO5Kd`) and "Prueba Julia" (currently named **JSC**, token `0mUtpy5jdqsX`). They show a dashed **Modo prueba** box (simulate arrival / wrong place). Admin → Teams card: **Demo: jump to stop N**, **Reset progress**. Real teams can't be jumped (server refuses).
@@ -112,7 +112,7 @@ Event teams: `t1..t5` "Equipo 1–5", no members, **waiting** (not started). Sta
 ## 9. Ideas not built (next steps, if wanted)
 
 - ~~Photo slideshow~~ and ~~zip export~~ — built 30 Sep. Still to do after the event: purge `hunt.subs.media` (it lives in the Personal Library project).
-- **Share card** for teams (branded image: name, final time, photo collage → phone share sheet for Instagram/WhatsApp) — proposed 30 Sep, not built.
+- ~~Share card~~ — built 30 Sep.
 - WhatsApp hunt agent via OpenClaw (the original "Pipo" idea) for nudges/commentary — deferred.
 - GPS-speed taxi inference — discussed and **rejected** in favour of the per-leg question.
 - Crowd vote for the Theatron photo, team chants, nemesis/dares (social ideas from the first session).
