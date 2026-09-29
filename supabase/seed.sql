@@ -66,7 +66,7 @@ on conflict (n) do update set name = excluded.name, clue = excluded.clue, ask = 
 
 insert into hunt.sides (id, name, place, pts, after_stop, ask, sort) values
 ('coin', 'La moneda más antigua', 'Casa de Moneda, junto al Botero', 20, 2, 'Foto de la moneda colombiana más antigua en exhibición', 1),
-('terminal', 'Una fecha histórica', 'Terminal Salitre', 50, 6, 'Compren el tiquete y mándennos una foto. Guárdenlo: se los pedimos al final.', 2),
+('terminal', 'Una fecha histórica', 'Terminal Salitre', 50, 7, 'Compren el tiquete y mándennos una foto. Guárdenlo: se los pedimos al final.', 2),
 ('novios', 'Foto de prom', 'Parque de Los Novios', 20, 8, 'Foto en el puente del lago, como si fueran al prom', 3)
 on conflict (id) do update set name = excluded.name, place = excluded.place, pts = excluded.pts, after_stop = excluded.after_stop, ask = excluded.ask, sort = excluded.sort;
 
