@@ -2,7 +2,7 @@
 const HUNT = {
   url: 'https://flbjlwckcgtlamnpabmj.supabase.co',
   key: 'sb_publishable_p0yhCENHJlvNcNRvqN2kpw_zo1vKS2b',
-  taxiPenalty: 10, stopPts: 10, hintStopPts: 5, placement: [50, 30, 20], theatronBonus: 10,
+  taxiPenalty: 10, stopPts: 10, hintStopPts: 5, quizCap: 70, placement: [50, 30, 20], theatronBonus: 10,
   cutoff: Date.parse('2026-10-03T18:00:00-05:00'),
 };
 const QUIZ = {

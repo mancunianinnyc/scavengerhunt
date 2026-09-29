@@ -160,3 +160,7 @@ update hunt.stops set clue = $q$Los habitantes de Bogotá han vivido millones de
 una librería verde en La Macarena contiene mil otras.
 Esa librería también tiene sede en otro lugar,
 encuéntrenla para que continuar.$q$ where n = 6;
+-- Text slips (30 Sep): stop 6 grammar, stop 7 feminine noun, stop 1 hint
+update hunt.stops set clue = replace(clue, 'encuéntrenla para que continuar.', 'encuéntrenla para continuar.') where n = 6;
+update hunt.stops set clue = replace(clue, 'Una personaje famosa en ese vecindario tenía habitación.', 'Una protagonista famosa en ese vecindario tenía habitación.') where n = 7;
+update hunt.stops set hint = 'Una fachada en la Plaza de Bolívar…' where n = 1;
