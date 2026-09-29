@@ -94,7 +94,7 @@ function puzzleHTML(c){
   if (!puz.letters[n]) {
     let i = -1;
     const vals = puz.vals[n] || [], marks = puz.marks[n] || [];
-    const phrase = esc(c.puzzle).replace(/\[_\]/g, () => { i++; const m = marks[i]; return `<input class="pz-box ${m===true?'ok':m===false?'bad':''}" data-i="${i}" maxlength="1" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Letra ${i+1}" value="${esc(vals[i]||'')}">`; });
+    const phrase = esc(c.puzzle).split(' ').map(w => w.includes('[_]') ? `<span class="pz-w">${w}</span>` : w).join(' ').replace(/\[_\]/g, () => { i++; const m = marks[i]; return `<input class="pz-box ${m===true?'ok':m===false?'bad':''}" data-i="${i}" maxlength="1" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Letra ${i+1}" value="${esc(vals[i]||'')}">`; });
     return `<h3 class="t-h">Completen la frase</h3><p class="t-p">Está grabada en la fachada del Palacio de Justicia. Escriban las letras que faltan.</p>
       <p class="pz">${phrase}</p><div class="err" id="err-${key}"></div>
       <button class="t-primary terra" id="pzCheck" ${busy?'disabled':''}><span>${busy?'Comprobando…':'Comprobar letras'}</span>${arrow}</button>`;
