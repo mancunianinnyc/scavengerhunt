@@ -452,6 +452,9 @@ td.total{font-family:var(--display);font-size:22px;color:var(--navy)}
 .prefixed{display:flex;flex-direction:column;gap:2px}
 .pz.prefix{font-style:italic;color:var(--navy);line-height:1.4}
 
-/* Clues: one consistent size on every stop. Long lines turn over with a hanging indent. */
-.poem{font-size:clamp(18px,5.1vw,21px) !important;line-height:1.5}
-.poem .verse{padding-left:1.2em;text-indent:-1.2em}
+/* Clues: one size on every stop. Each verse is a unit: tight leading inside a verse, a gap between verses,
+   and a long verse turns over with a hanging indent (as poetry is set on narrow pages). */
+.poem{font-size:18px !important;line-height:1.36;gap:1.1em}
+.poem .stanza{gap:.42em}
+.poem .verse{padding-left:1.1em;text-indent:-1.1em;text-wrap:pretty}
+@media (min-width:600px){.poem{font-size:20px !important}}
