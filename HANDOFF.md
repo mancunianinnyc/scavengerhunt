@@ -1,6 +1,6 @@
 # HANDOFF — El Gran Scavenger Hunt de Bogotá
 
-_Last updated: 2026-09-29 (Tue) by Claude. Event: **Saturday 3 October 2026**, meet 09:45, start 10:00._
+_Last updated: 2026-09-30 (Wed) by Claude. Event: **Saturday 3 October 2026**, meet 09:45, start 10:00._
 _Read this first in any new session. Source of truth for content is the **database**, not this file._
 
 ---
@@ -53,13 +53,13 @@ _Read this first in any new session. Source of truth for content is the **databa
 
 ## 4. Admin page
 
-Collapsible cards (remembered per device): **Teams & departures** first (auto-collapses once all event teams are out) · KPIs · **Review queue** (always shows every team incl. test, photos load inline, tap to zoom) · Leaderboard (hidden from teams; test teams only with "Show test teams") · Quizzes & awards (counts → points live) · Scoring rules · Check-in grid · **Reveal** (last place → champion).
+Collapsible cards (remembered per device): **Teams & departures** first (auto-collapses once all event teams are out) · KPIs · **Review queue** (always shows every team incl. test, photos load inline, tap to zoom) · Leaderboard (hidden from teams; test teams only with "Show test teams") · Quizzes & awards (counts → points live) · Scoring rules · Check-in grid · **Finish & reveal**: reveal (last place → champion, each team with a 4-photo polaroid strip), **Photo slideshow** (all non-rejected photos, Ken Burns + crossfade, team filter, arrows/space/esc), **Download all photos (.zip)** (folder per team + `index.csv`). Photo code lives in `public/photos.js`.
 
 Teams card: colour, name (team's own pick is tagged), members, **Start now**, set time, Clear, **Copy link** (for WhatsApp), schedule all (first time + gap, in order or shuffled), add/delete team.
 
 ## 5. Scoring (as the app computes it)
 
-`Total = per approved stop 10 (5 if hint used) + speed bonus 50/30/20 (own elapsed; none if finishing after 18:00) + quizzes + side quests (coin 20, ticket 50, prom 20) + drink can 10 + Theatron award 10 − 10 per taxi beyond 4 ± manual adjustment`
+`Total = per approved stop 10 (5 if hint used) + speed bonus 50/30/20 (own elapsed; none if finishing after 18:00) + quizzes (**all four combined capped at 70**) + side quests (coin 20, ticket 50, prom 20) + drink can 10 + Theatron award 10 − 10 per taxi beyond 4 ± manual adjustment`
 
 Quizzes: universities 1 each · localidades 1 each (×2 if all 20) · water bodies 2 each · poets 3 / writers 2 / musicians 1. Entered from the printed sheets.
 
@@ -85,18 +85,18 @@ Event teams: `t1..t5` "Equipo 1–5", no members, **waiting** (not started). Sta
 ## 7. Before Saturday — open items
 
 **Must do**
-- [ ] **Walk / check the four ≈ locations** (3, 4, 7, 8) — stand there, tap "Estamos aquí" on a test team (without Modo prueba) and confirm it passes. Adjust `lat/lng/radius` in `hunt.stops` if not.
+- [ ] **Walk / check the four ≈ locations** (Ross: Thu 1 Oct) (3, 4, 7, 8) — stand there, tap "Estamos aquí" on a test team (without Modo prueba) and confirm it passes. Adjust `lat/lng/radius` in `hunt.stops` if not.
 - [ ] **Stop 1 facade wording** matches the sentence around the boxes ("las armas… darán la libertad"; only the 7 letters are checked).
 - [ ] **BibloRed on a Saturday:** confirm walk-in affiliation works for non-residents/foreigners (ID needed?) and opening hours; decide a fallback if a team can't get a card (e.g. photo in the reading room).
 - [ ] **Venue hours for Sat 3 Oct:** Botero, Casa de Moneda, Quinta de Bolívar, Perseverancia market (ajiaco stall + backup), Matorral, Virgilio Barco.
-- [ ] **Print** Quiz 1 (Ross) and Quiz 2 (Julia); bring pens.
+- [ ] **Print** Quiz 1 (Ross) and Quiz 2 (Julia) — both 2 pages, updated 30 Sep; bring pens.
 - [ ] **Day-before reset:** reset both test teams; confirm event teams have no progress (they don't today).
 - [ ] **Share the admin passcode with Julia**; both test the admin on phones.
 
 **Decisions still open (Julia)**
-- [ ] Quiz points vs speed: quizzes ran 51–95/team vs 50 max speed bonus → cap open quizzes at 20, raise speed to 80/50/30, or leave.
-- [ ] Partiful says ~5 h, 10:00–17:00; our estimate is 7–8 h → trim a stop or update the invite.
-- [ ] Text nits (kept as Julia wrote): stop 6 "para que continuar", stop 7 "Una personaje famosa", stop 1 hint looks truncated.
+- [x] Quiz points vs speed → **combined quiz cap 70** (30 Sep).
+- [x] Duration: leave Partiful as is (Ross, 30 Sep).
+- [x] Text nits fixed 30 Sep: stop 6 "para continuar", stop 7 "Una protagonista famosa" (Betty = a woman), stop 1 hint "Una fachada en la Plaza de Bolívar…".
 - [ ] Anagram help free or costs points? (currently free)
 - [ ] Riddles for the coin / prom side quests? (currently their places are shown)
 
@@ -111,8 +111,8 @@ Event teams: `t1..t5` "Equipo 1–5", no members, **waiting** (not started). Sta
 
 ## 9. Ideas not built (next steps, if wanted)
 
-- **Photo slideshow at the reveal** (all approved selfies, per team) — easy win, data already stored.
-- **Post-event album/export** of photos, then purge `hunt.subs.media` (it lives in the Personal Library project).
+- ~~Photo slideshow~~ and ~~zip export~~ — built 30 Sep. Still to do after the event: purge `hunt.subs.media` (it lives in the Personal Library project).
+- **Share card** for teams (branded image: name, final time, photo collage → phone share sheet for Instagram/WhatsApp) — proposed 30 Sep, not built.
 - WhatsApp hunt agent via OpenClaw (the original "Pipo" idea) for nudges/commentary — deferred.
 - GPS-speed taxi inference — discussed and **rejected** in favour of the per-leg question.
 - Crowd vote for the Theatron photo, team chants, nemesis/dares (social ideas from the first session).
