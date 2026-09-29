@@ -155,3 +155,8 @@ update hunt.stops as s set ask = v.ask, qm = v.qm from (values
   (9, 'Selfie ilustrativa', 'Afuera del lugar. La foto más evocativa gana 10 puntos extra.'),
   (10, 'Selfie en la puerta', 'Esta foto detiene su reloj.')
 ) as v(n, ask, qm) where s.n = v.n;
+-- Stop 6 poem (Julia, 29 Sep, second revision)
+update hunt.stops set clue = $q$Los habitantes de Bogotá han vivido millones de historias,
+una librería verde en La Macarena contiene mil otras.
+Esa librería también tiene sede en otro lugar,
+encuéntrenla para que continuar.$q$ where n = 6;
