@@ -62,6 +62,8 @@ function fitPoems(root=document){
     const avail = p.clientWidth; let widest = 0;
     p.querySelectorAll('.verse').forEach(v => { widest = Math.max(widest, v.scrollWidth); });
     p.classList.remove('measuring');
-    if (widest > avail && avail > 0) p.style.fontSize = Math.max(min, Math.floor(max * avail / widest * 10) / 10) + 'px';
+    if (widest > avail * .95 && avail > 0) p.style.fontSize = Math.max(min, Math.floor(max * avail * .94 / widest * 10) / 10) + 'px';
   });
 }
+
+document.fonts?.addEventListener?.('loadingdone', () => fitPoems());
