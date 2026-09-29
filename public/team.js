@@ -57,10 +57,10 @@ function dropInput(key, kind, sub){
     : `${kind==='voice'?ICON.mic:ICON.cam}<b>${kind==='voice'?'Grabar o subir nota de voz':'Tomar o subir la foto'}</b><small>${sub || (kind==='voice'?'Audio del celular o de WhatsApp':'Todo el equipo en la foto')}</small>`;
   return `<label class="t-drop" for="in-${key}">${inner}</label><input class="vh" type="file" id="in-${key}" accept="${accept}">`;
 }
-function proofField(key, kind, prefix){
+function proofField(key, kind, prefix, sub){
   if (kind === 'phrase' && prefix) return `<div class="prefixed"><p class="pz prefix">${esc(prefix)}</p>
     <textarea class="t-input" id="in-${key}" rows="3" placeholder="…escriban el resto de la inscripción">${esc(drafts[key]||'')}</textarea></div>`;
-  return kind==='phrase' ? `<textarea class="t-input" id="in-${key}" rows="2" placeholder="Escriban la frase exacta…">${esc(drafts[key]||'')}</textarea>` : dropInput(key, kind);
+  return kind==='phrase' ? `<textarea class="t-input" id="in-${key}" rows="2" placeholder="Escriban la frase exacta…">${esc(drafts[key]||'')}</textarea>` : dropInput(key, kind, sub);
 }
 function redoNotice(){
   const r = ST.progress.find(p => p.status==='rejected');
@@ -86,7 +86,7 @@ function ctaCard(){
   return `<section class="c-cta" id="cta"><div class="t-eyebrow">Parada ${c.n} · El reto</div>
     <div class="t-ok">${ICON.check}<span>${ci.ok?'Check-in confirmado':'Check-in sin GPS'} · ${esc(ci.name)} · ${hm(ci.t)}</span></div>
     ${c.puzzle ? puzzleHTML(c) : `<h3 class="t-h">${esc(c.ask)}</h3>${c.qm?`<p class="t-note">${esc(c.qm)}</p>`:''}
-    ${proofField(key, c.proof, c.prefix)}<div class="err" id="err-${key}"></div>
+    ${proofField(key, c.proof, c.prefix, /selfie|pose/i.test(c.ask) ? null : 'Una foto clara basta')}<div class="err" id="err-${key}"></div>
     <button class="t-primary terra" data-submit="${key}" ${busy?'disabled':''}><span>${busy?'Enviando…':c.finish?'Detener el reloj':c.proof==='phrase'?'Comprobar':'Enviar'}</span>${arrow}</button>`}
     <details class="again" ontoggle="fitPoems(this)"><summary>Ver la pista otra vez</summary>${poemHTML(c.clue)}</details>
     ${redoNotice()}</section>`;
