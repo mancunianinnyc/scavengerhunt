@@ -10,3 +10,5 @@ Team app + quizmaster admin for the 3 Oct 2026 hunt. Static pages on Vercel, dat
 - Photos are downscaled on the phone (1280 px JPEG) and stored in `hunt.subs.media`.
 
 Vercel conventions: see `Claude Workspace/VERCEL-CONVENTIONS.md`. No build step; output dir is `public/`.
+
+Repo: github.com/mancunianinnyc/scavengerhunt (push via SSH alias `github-bogota-hunt`, deploy key `~/.ssh/bogota_hunt_deploy`). Vercel project `bogota-hunt` is git-connected: pushes to `main` deploy to hunt.rossgarlick.com; commits touching only `supabase/` or `README.md` are skipped.
