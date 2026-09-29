@@ -1,0 +1,1 @@
+-- 012 (applied 2026-09-29): stops.answer_prefix; stop 3 = type the rest of La Pola's inscription after 'Aunque mujer y joven,' (words sobra/valor/sufrir/muerte/libertad); stop 3 coords moved to Cra 2 x Cl 18 (4.6026,-74.0668), radius 400.
