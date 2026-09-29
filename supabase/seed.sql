@@ -142,3 +142,16 @@ update hunt.stops set clue = replace(clue, 'entre esas dos cosas, liberó cuatro
 -- Stop 3: typed inscription (see migration 012)
 update hunt.stops set proof = 'phrase', ask = 'Completen la inscripción de La Pola', answer_prefix = 'Aunque mujer y joven,',
   answer_words = '{sobra,valor,sufrir,muerte,libertad}', lat = 4.6026, lng = -74.0668, radius = 400 where n = 3;
+-- Challenge wording pass (2026-09-29): short headings (ask) + details in the note (qm)
+update hunt.stops as s set ask = v.ask, qm = v.qm from (values
+  (1, 'Completen la frase', null),
+  (2, 'Selfie con el Ladrón', 'Todo el equipo en la foto, con la obra de Botero.'),
+  (3, 'Completen la inscripción', null),
+  (4, 'Selfie en la casa', 'Después busquen a Ross en la entrada para la trivia: universidades y localidades de Bogotá.'),
+  (5, 'Selfie con el plato vacío', 'Compren un ajiaco, cómanlo entre todos y tómense la selfie con el plato vacío.'),
+  (6, 'Selfie en la librería', 'Todo el equipo en la foto, adentro de la librería.'),
+  (7, 'Recreen una pose de Betty', 'Foto del equipo frente a la casa. Gafas y brackets opcionales.'),
+  (8, 'El carné de BibloRed', 'Afíliense a BibloRed (es gratis, pídanlo en la entrada) y mándennos una foto del carné. Si alguien ya tiene carné, muestren ese. Después busquen a Julia adentro para la trivia: cuerpos de agua y figuras culturales.'),
+  (9, 'Selfie ilustrativa', 'Afuera del lugar. La foto más evocativa gana 10 puntos extra.'),
+  (10, 'Selfie en la puerta', 'Esta foto detiene su reloj.')
+) as v(n, ask, qm) where s.n = v.n;
