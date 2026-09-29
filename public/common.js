@@ -55,15 +55,6 @@ function poemHTML(text){
   const stanzas = String(text||'').trim().split(/\n\s*\n/);
   return `<div class="poem">${stanzas.map(st => `<p class="stanza">${st.split('\n').map(l => `<span class="verse">${esc(l.trim())}</span>`).join('')}</p>`).join('')}</div>`;
 }
-function fitPoems(root=document){
-  root.querySelectorAll('.poem').forEach(p => {
-    const max = 24, min = 16;
-    p.style.fontSize = max + 'px'; p.classList.add('measuring');
-    const avail = p.clientWidth; let widest = 0;
-    p.querySelectorAll('.verse').forEach(v => { widest = Math.max(widest, v.scrollWidth); });
-    p.classList.remove('measuring');
-    if (widest > avail * .95 && avail > 0) p.style.fontSize = Math.max(min, Math.floor(max * avail * .94 / widest * 10) / 10) + 'px';
-  });
-}
+function fitPoems(){ /* every clue uses the same fixed size (see .poem in app.css); long lines turn over with a hanging indent */ }
 
 document.fonts?.addEventListener?.('loadingdone', () => fitPoems());
