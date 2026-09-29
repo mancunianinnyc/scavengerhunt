@@ -132,3 +132,8 @@ Nombrado por un presidente que buscó paz y constituyente.$q$, hint = 'La biblio
 update hunt.stops set hint = '¿''La Capilla'' se encuentra en que discoteca?' where n = 9;
 update hunt.stops set hint = '''Franc''-ly, we need a drink!' where n = 10;
 update hunt.sides set after_stop = 7 where id = 'terminal';
+-- Accent/capitalisation fixes (2026-09-29)
+update hunt.stops set hint = '¿El Libertador dónde durmió?' where n = 4;
+update hunt.stops set hint = '¿Dónde está la otra sede de Matorral?' where n = 6;
+update hunt.stops set clue = replace(clue, E'\nNombrado por un presidente', E'\nnombrado por un presidente') where n = 8;
+update hunt.stops set hint = '¿''La Capilla'' se encuentra en qué discoteca?' where n = 9;
