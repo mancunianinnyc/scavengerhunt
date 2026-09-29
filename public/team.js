@@ -15,7 +15,7 @@ const MSG = {
 };
 const errMsg = e => MSG[e?.code] || 'Algo falló. Intenten de nuevo en un momento.';
 
-let TOKEN = null, ST = null, screen = 'stop', modal = null, celebration = null, busy = false, geo = {};
+let TOKEN = null, ST = null, screen = 'stop', modal = null, celebration = null, busy = false, geo = {}, missFx = null;
 const pending = {}, drafts = {};
 
 function readToken(){
@@ -65,10 +65,10 @@ function redoNotice(){
 function ctaCard(){
   const c = ST.current; const ci = c.checkin;
   if (!ci) {
-    const g = geo; const shake = g.shake; geo.shake = false;
-    return `<section class="c-cta ${shake?'shake':''}" id="cta"><div class="t-eyebrow">Parada ${c.n} · La pista</div>
+    const g = geo;
+    return `<section class="c-cta" id="cta"><div class="t-eyebrow">Parada ${c.n} · La pista</div>
       ${poemHTML(c.clue)}
-      ${g.miss?`<div class="t-miss" role="alert">Aún no. Están a ${fmtDist(g.miss)} de la parada. Lean la pista otra vez.</div>`:''}
+      ${g.miss?`<div class="t-miss" role="alert"><span class="pin">${ICON.pin}</span><span>Aún no. Están a <b id="missDist">${fmtDist(g.miss)}</b> de la parada. Lean la pista otra vez.</span></div>`:''}
       <button class="t-primary" id="checkinBtn" ${busy?'disabled':''}><span>${busy?'Buscando su ubicación…':'Estamos aquí · hacer check-in'}</span>${ICON.pin}</button>
       ${g.fail||g.miss?`<div class="geo-alt"><p class="t-p">${g.fail?'No pudimos leer su ubicación.':'¿Seguros que están en el lugar?'} Pueden hacer check-in sin GPS y los quizmasters lo confirman.</p>
         <button class="t-link" id="checkinManual" style="align-self:flex-start">Hacer check-in sin GPS</button></div>`:''}
@@ -133,6 +133,8 @@ function render(){
   const key = screen+'|'+curN()+'|'+!!ST.current?.checkin; const enter = key !== lastKey; lastKey = key;
   $('#app').innerHTML = `<div class="tapp ${enter?'enter':''}">${statusCard()}${body()}</div>${overlay()}`;
   bind(); tick(); fitPoems();
+  if (celebration && !celebration.fired) { celebration.fired = true; Motion.confetti(celebration.fx || 'normal'); }
+  if (missFx != null) { const d = missFx; missFx = null; Motion.nope($('#cta')); Motion.countUp($('#missDist'), d, fmtDist); }
 }
 function fatal(msg){ $('#app').innerHTML = `<div class="tapp"><section class="c-cta"><div class="t-eyebrow">El Gran Scavenger Hunt</div><h2 class="t-h">Ups</h2><p class="t-p">${esc(msg)}</p></section></div>`; }
 
@@ -148,17 +150,17 @@ function checkIn(){
     busy = false;
     await act(async () => {
       const r = await rpc('hunt_checkin', {p_token:TOKEN, p_lat:pos.coords.latitude, p_lng:pos.coords.longitude, p_acc:pos.coords.accuracy});
-      if (r.ok) { geo = {}; celebration = {eyebrow:`Parada ${n}`, title:'¡Correcto!', body:`Encontraron ${r.name}. Ahora, el reto.`, cta:'Ver el reto'}; await load(); }
-      else { geo = {miss:r.dist, shake:true}; navigator.vibrate?.(200); }
+      if (r.ok) { geo = {}; celebration = {eyebrow:`Parada ${n}`, title:'¡Correcto!', body:`Encontraron ${r.name}. Ahora, el reto.`, cta:'Ver el reto', fx:'normal'}; await load(); }
+      else { geo = {miss:r.dist}; missFx = r.dist; }
     });
   }, () => { busy = false; geo = {fail:true}; render(); }, {enableHighAccuracy:true, timeout:15000, maximumAge:0});
 }
 function manualCheckin(){
   const n = curN();
   act(async () => { const r = await rpc('hunt_checkin', {p_token:TOKEN, p_lat:null, p_lng:null, p_acc:null});
-    geo = {}; celebration = {eyebrow:`Parada ${n}`, title:'Check-in registrado', body:`Los quizmasters confirman que están en ${r.name}. Ahora, el reto.`, cta:'Ver el reto'}; await load(); });
+    geo = {}; celebration = {eyebrow:`Parada ${n}`, title:'Check-in registrado', body:`Los quizmasters confirman que están en ${r.name}. Ahora, el reto.`, cta:'Ver el reto', fx:'small'}; await load(); });
 }
-function shake(key, m){ const e = document.getElementById('err-'+key); if (e) e.textContent = m; else toast(m); const c = $('#cta'); if (c) { c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); } navigator.vibrate?.(200); }
+function shake(key, m){ const e = document.getElementById('err-'+key); if (e) e.textContent = m; else toast(m); Motion.nope($('#cta')); }
 async function submit(key, resubmit){
   const isStop = /^s\d+$/.test(key);
   const kind = isStop ? (resubmit ? ST.progress.find(p=>'s'+p.n===key)?.proof : ST.current?.proof) : 'photo';
@@ -177,8 +179,8 @@ async function submit(key, resubmit){
     if (!isStop) { screen = 'sides'; toast('Enviado a los quizmasters.'); return; }
     const side = ST.sides.find(s => !prevSides.has(s.id));
     celebration = wasFinish
-      ? {eyebrow:'FRANC', title:'¡Llegaron!', body:`Reloj detenido en ${durS(elapsed())}. Pidan algo: los puntajes se revelan cuando lleguen todos.`, cta:'Ver nuestro tiempo'}
-      : {eyebrow:`Parada ${n} completa`, title: kind==='phrase' ? '¡Frase correcta!' : '¡Reto enviado!', body: kind==='phrase' ? 'Exacto. La siguiente pista ya está desbloqueada.' : 'Los quizmasters revisan su prueba. Mientras tanto, sigan.', cta:`Pista ${curN()}`, side};
+      ? {eyebrow:'FRANC', title:'¡Llegaron!', body:`Reloj detenido en ${durS(elapsed())}. Pidan algo: los puntajes se revelan cuando lleguen todos.`, cta:'Ver nuestro tiempo', fx:'big'}
+      : {eyebrow:`Parada ${n} completa`, title: kind==='phrase' ? '¡Frase correcta!' : '¡Reto enviado!', body: kind==='phrase' ? 'Exacto. La siguiente pista ya está desbloqueada.' : 'Los quizmasters revisan su prueba. Mientras tanto, sigan.', cta:`Pista ${curN()}`, side, fx: kind==='phrase' ? 'normal' : 'small'};
     screen = 'stop';
   });
   if (wrong) shake(key, 'Esa no es. Levanten los ojos otra vez.');
@@ -205,7 +207,7 @@ function bind(){
   const my = $('#mYes'); if (my) { my.focus(); my.onclick = () => { const f = modal.onYes; modal = null; f(); }; }
   const mn = $('#mNo'); if (mn) mn.onclick = () => { modal = null; render(); };
   const sc = $('#scrim'); if (sc) sc.onclick = e => { if (e.target === sc) { modal = null; render(); } };
-  const cg = $('#celGo'); if (cg) { cg.focus(); cg.onclick = () => { celebration = null; render(); window.scrollTo(0,0); }; }
+  const cg = $('#celGo'); if (cg) { cg.focus({focusVisible:false}); cg.onclick = () => { celebration = null; render(); window.scrollTo(0,0); }; }
   const cs = $('#celSide'); if (cs) cs.onclick = () => { const id = celebration.side.id; celebration = null; go('side:'+id); };
 }
 function tick(){

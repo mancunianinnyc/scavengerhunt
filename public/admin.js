@@ -66,6 +66,7 @@ function teamsPanel(){
           ${t.depart != null ? `<button class="btn sm ghost" data-unstart="${esc(t.id)}">Clear</button>` : ''}
         </div></div>
       <div class="tm-link"><button class="btn sm ghost" data-copy="${esc(t.id)}">Copy link</button><a class="muted" href="${esc(linkFor(t))}" target="_blank" rel="noopener">Open</a>
+        ${t.isTest ? `<label class="muted" style="font-size:12px">Demo: jump to <select data-jump="${esc(t.id)}" aria-label="Jump ${esc(t.name)} to stop"><option value="">stop…</option>${STOPS.map(s => `<option value="${s.n}">${s.n}. ${esc(s.name)}</option>`).join('')}</select></label>` : ''}
         <button class="t-link tm-danger" data-reset="${esc(t.id)}">Reset progress</button><button class="t-link tm-danger" data-delete="${esc(t.id)}">Delete</button></div>
     </div>`).join('');
   const ev = TEAMS.filter(t => !t.isTest);
@@ -229,6 +230,9 @@ function bind(){
     confirmThen({title:`Reset ${t.name}?`, body:'Deletes all their check-ins, proofs, hints, taxis and quiz scores. The team, link and members stay.', yes:'Reset progress', danger:true, run:() => doRpc('hunt_admin_reset', {p_team:t.id}, 'Progress reset.')}); });
   document.querySelectorAll('[data-delete]').forEach(b => b.onclick = () => { const t = team(b.dataset.delete);
     confirmThen({title:`Delete ${t.name}?`, body:'Removes the team, its link and everything it submitted. This cannot be undone.', yes:'Delete team', danger:true, run:() => doRpc('hunt_admin_team_delete', {p_team:t.id}, 'Team deleted.')}); });
+  document.querySelectorAll('[data-jump]').forEach(x => x.onchange = () => { const t = team(x.dataset.jump); const n = +x.value; if (!n) return;
+    confirmThen({title:`Jump ${t.name} to stop ${n}?`, body:`Wipes its progress and marks stops 1–${n-1} as done, so the phone shows the stop ${n} clue. Test teams only.`, yes:`Jump to stop ${n}`, danger:true,
+      run:() => doRpc('hunt_admin_jump', {p_team:t.id, p_stop:n}, `${t.name} is at stop ${n}.`)}); });
   const add = $('#addTeam'); if (add) add.onclick = () => { const colors = ['#CF5436','#2E7A57','#7A4B2A','#E4AA2A','#3F6FD8','#8A3FA0','#1F8A8A','#B8336A'];
     doRpc('hunt_admin_team_save', {p_team:null, p_name:`Equipo ${TEAMS.filter(t=>!t.isTest).length + 1}`, p_color:colors[TEAMS.length % colors.length], p_members:[]}, 'Team added.'); };
   const sched = shuffle => { const ev = TEAMS.filter(t => !t.isTest).map(t => t.id); if (shuffle) for (let i = ev.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [ev[i],ev[j]] = [ev[j],ev[i]]; }
