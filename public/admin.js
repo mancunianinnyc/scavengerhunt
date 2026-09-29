@@ -1,6 +1,7 @@
 /* Admin: teams & departures, proof review, live scoring, reveal. */
 let KEY = null, STOPS = [], SIDE = [], TEAMS = [], CFG = {};
 const S = {expanded:null, scoreTeam:null, showTests:false};
+try { S.showTests = localStorage.getItem('hunt-admin-tests') === '1'; } catch(_) {}
 let modal = null, lightbox = null, loading = false;
 const mediaCache = {};
 
@@ -35,7 +36,7 @@ function placements(list){
 }
 function score(t, P){
   const stops = STOPS.filter(s => t.subs['s'+s.n]?.status === 'approved').length;
-  const stopPts = STOPS.filter(s => t.subs['s'+s.n]?.status === 'approved' && !t.hints.includes(s.n)).length * HUNT.stopPts;
+  const stopPts = STOPS.filter(s => t.subs['s'+s.n]?.status === 'approved').reduce((sum, s) => sum + (t.hints.includes(s.n) ? HUNT.hintStopPts : HUNT.stopPts), 0);
   const place = P[t.id]?.pts || 0;
   const quiz = Object.keys(QUIZ).reduce((a,q) => a + quizPts(t,q), 0);
   const side = SIDE.reduce((a,q) => a + (t.subs[q.id]?.status === 'approved' ? q.pts : 0), 0);
@@ -101,7 +102,7 @@ function teamsPanel(){
 }
 function queuePanel(){
   const q = [];
-  board().forEach(t => Object.entries(t.subs).forEach(([k,s]) => { if (s.status === 'pending') q.push({t,k,s}); }));
+  TEAMS.forEach(t => Object.entries(t.subs).forEach(([k,s]) => { if (s.status === 'pending') q.push({t,k,s}); }));  // the queue always shows every team, test teams included
   q.sort((a,b) => a.s.t - b.s.t);
   const items = q.map(({t,k,s}) => {
     const st = /^s\d+$/.test(k) ? STOPS.find(x => 's'+x.n === k) : null; const sq = SIDE.find(x => x.id === k);
@@ -112,7 +113,7 @@ function queuePanel(){
     if (s.mediaType?.startsWith('audio')) ph = m?.media ? `<audio controls src="${m.media}" style="width:100%"></audio>` : '<div class="ph-load">loading audio…</div>';
     else ph = m?.media ? `<button class="ph-btn" data-zoom="${esc(mk)}"><img src="${m.media}" alt="Proof from ${esc(t.name)}"></button>` : `<div class="ph-load" style="background:${esc(t.color)}">loading…</div>`;
     return `<div class="qi ${s.mediaType?.startsWith('audio')?'audio':''}"><div class="ph">${ph}</div><div class="meta">
-      <b>${esc(t.name)} · ${esc(title)}${s.resub?' · resubmitted':''}</b><span class="muted" style="font-size:12px"><span class="mono">${hm(s.t)}</span> · asked for: ${esc(st ? st.ask : sq?.ask)}</span>
+      <b>${esc(t.name)}${t.isTest?' <span class="chip idle">test</span>':''} · ${esc(title)}${s.resub?' · resubmitted':''}</b><span class="muted" style="font-size:12px"><span class="mono">${hm(s.t)}</span> · asked for: ${esc(st ? st.ask : sq?.ask)}</span>
       ${ci ? (ci.ok ? `<span class="chip ok" style="align-self:flex-start">GPS check-in · ${ci.dist ?? '?'} m</span>` : `<span class="chip pend" style="align-self:flex-start">No-GPS check-in: confirm location</span>`) : ''}
       <div class="acts"><button class="btn sm" data-approve="${esc(t.id)}|${esc(k)}">Approve</button><button class="btn sm ghost" data-reject="${esc(t.id)}|${esc(k)}">Reject</button></div></div></div>`;
   }).join('');
@@ -168,9 +169,9 @@ function matrixPanel(){
 }
 function rulesPanel(){
   return `<section class="panel"><div class="panel-h"><h2>Scoring rules v1</h2><p>What this page calculates. <span class="prop">Proposed</span> items still need Julia's yes.</p></div>
-    <p class="formula">Total = 10 × approved stops without a hint + placement bonus + quiz points + side quests + awards − taxi penalty ± manual</p>
+    <p class="formula">Total = 10 per approved stop (5 if the hint was used) + placement bonus + quiz points + side quests + awards − taxi penalty ± manual</p>
     <div class="rules">
-      <div class="rule"><h5>Stops</h5><ul><li>10 pts per approved stop, 10 stops, max 100.</li><li>Arrival is a GPS check-in within 250–400 m. A no-GPS check-in is allowed and flagged here.<span class="prop">Proposed</span></li><li>Phrase answers auto-check. Photos and voice notes unlock the next clue on submit; a rejected proof scores 0 until resubmitted.</li><li>Using a hint: that stop scores 0.<span class="prop">Proposed</span></li></ul></div>
+      <div class="rule"><h5>Stops</h5><ul><li>10 pts per approved stop, 10 stops, max 100.</li><li>Arrival is a GPS check-in within 250–400 m. A no-GPS check-in is allowed and flagged here.<span class="prop">Proposed</span></li><li>Phrase answers auto-check. Photos and voice notes unlock the next clue on submit; a rejected proof scores 0 until resubmitted.</li><li>Using a hint: that stop scores 5 instead of 10 (Julia, 29 Sep).</li></ul></div>
       <div class="rule"><h5>Placement</h5><ul><li>Clock runs from each team's own departure to its final-stop photo.</li><li>Fastest three: 50 / 30 / 20.</li><li>Finishing after 18:00 earns no placement bonus.<span class="prop">Proposed</span></li><li>Tie-break: faster elapsed time.</li></ul></div>
       <div class="rule"><h5>Quizzes</h5><ul><li>Universities 1 each. Localidades 1 each, doubled for all 20.</li><li>Water bodies 2 each. Poets 3, writers 2, musicians 1.</li><li>3 minutes per quiz, phones away.<span class="prop">Proposed</span></li></ul></div>
       <div class="rule"><h5>Extras &amp; penalties</h5><ul><li>Coin 20 · Boyacá ticket 50 · Prom photo 20 · Drink can 10 · Theatron award 10.</li><li>Each taxi beyond ${taxiLimit()}: −10.<span class="prop">Proposed</span></li></ul></div>
@@ -180,7 +181,7 @@ function adminView(){
   const R = ranked(); const n = now();
   const ev = board();
   const out = ev.filter(t => started(t) && !finishT(t)).length, fin = ev.filter(t => finishT(t)).length;
-  let pend = 0; ev.forEach(t => Object.values(t.subs).forEach(s => { if (s.status === 'pending') pend++; }));
+  let pend = 0; TEAMS.forEach(t => Object.values(t.subs).forEach(s => { if (s.status === 'pending') pend++; }));
   const kpis = `<div class="kpis">
     <div class="kpi"><div class="k">On the route</div><div class="v num">${out}</div><div class="s">${fin} finished · ${ev.length-out-fin} not started</div></div>
     <div class="kpi ${pend?'alert':''}"><div class="k">Proofs to review</div><div class="v num">${pend}</div><div class="s">${pend?'see the queue below':'queue clear'}</div></div>
@@ -220,7 +221,7 @@ async function doRpc(fn, args, okMsg){ try { await rpc(fn, {p_key:KEY, ...args})
 function confirmThen(m){ modal = m; render(); }
 async function fetchMedia(){
   const need = [];
-  board().forEach(t => Object.entries(t.subs).forEach(([k,s]) => { const mk = `${t.id}|${k}|${s.updated}`; if (s.status === 'pending' && s.hasMedia && !mediaCache[mk]) need.push([t.id,k,mk]); }));
+  TEAMS.forEach(t => Object.entries(t.subs).forEach(([k,s]) => { const mk = `${t.id}|${k}|${s.updated}`; if (s.status === 'pending' && s.hasMedia && !mediaCache[mk]) need.push([t.id,k,mk]); }));
   for (const [tid,k,mk] of need) { mediaCache[mk] = {loading:true}; try { const r = await rpc('hunt_admin_media', {p_key:KEY, p_team:tid, p_sub:k}); mediaCache[mk] = r || {}; } catch(e) { delete mediaCache[mk]; } }
   if (need.length && !isEditing()) render();
 }
@@ -310,7 +311,7 @@ function startReveal(){
 
 /* ---------- boot ---------- */
 (async function start(){
-  $('#tests').onchange = e => { S.showTests = e.target.checked; render(); };
+  $('#tests').onchange = e => { S.showTests = e.target.checked; try { localStorage.setItem('hunt-admin-tests', S.showTests ? '1' : '0'); } catch(_) {} render(); };
   $('#logout').onclick = () => { try { localStorage.removeItem('hunt-admin'); } catch(_){} KEY = null; login(); };
   try { KEY = localStorage.getItem('hunt-admin'); } catch(_){}
   if (!KEY) return login();

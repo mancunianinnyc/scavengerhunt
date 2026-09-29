@@ -1,0 +1,1 @@
+-- 011 (applied 2026-09-29): stops.puzzle_hint ('Un experto es un…' for stop 1), sent as current.puzzleHint after check-in. Hint rule now: stop scores 5 instead of 10 (client-side scoring).

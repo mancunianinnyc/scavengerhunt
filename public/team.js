@@ -91,7 +91,7 @@ function ctaCard(){
 }
 
 /* Stop-1 style puzzle: fill the missing letters (checked on the server), then unscramble them. */
-const puz = {vals:{}, letters:{}, marks:{}, pick:{}, shown:{}};
+const puz = {vals:{}, letters:{}, marks:{}, pick:{}, shown:{}, help:{}};
 try { Object.assign(puz.letters, JSON.parse(sessionStorage.getItem('hunt-puz') || '{}')); } catch(_) {}
 function puzzleHTML(c){
   const n = c.n, key = 's'+n;
@@ -112,6 +112,7 @@ function puzzleHTML(c){
       ? `<button class="pz-cell pz-slot filled" data-unpick="${k}" aria-label="Quitar ${esc(L[pick[k]])}">${esc(L[pick[k]])}</button>`
       : `<span class="pz-cell pz-slot"></span>`).join('')}</div>
     <div class="pz-grid pz-tiles ${intro?'intro':''}">${L.map((ch,i) => `<button class="pz-cell pz-tile ${pick.includes(i)?'used':''}" style="--i:${i}" data-pick="${i}" ${pick.includes(i)?'disabled':''} aria-label="Letra ${esc(ch)}">${esc(ch)}</button>`).join('')}</div>
+    ${c.puzzleHint ? (puz.help[n] ? `<div class="t-hint"><span>Ayuda</span>${esc(c.puzzleHint)}</div>` : `<button class="t-link" id="pzHelp" style="align-self:flex-start">¿Necesitan una ayuda?</button>`) : ''}
     <input type="hidden" id="in-${key}" value="${esc(word)}">
     <div class="err" id="err-${key}"></div>
     <button class="t-primary terra" data-submit="${key}" ${busy||pick.length<L.length?'disabled':''}><span>${busy?'Comprobando…':'Comprobar palabra'}</span>${arrow}</button>
@@ -179,9 +180,9 @@ function answerLeg(taxi){
 }
 function hintCard(){
   const c = ST.current;
-  if (c.hint) return `<section class="c-hint used"><span class="lbl">Pista · parada ${c.n}</span><p>${esc(c.hint)}</p><small class="muted">Usaron la pista: esta parada no suma puntos.</small></section>`;
+  if (c.hint) return `<section class="c-hint used"><span class="lbl">Pista · parada ${c.n}</span><p>${esc(c.hint)}</p><small class="muted">Usaron la pista: esta parada vale 5 puntos en vez de 10.</small></section>`;
   if (c.checkin) return '';
-  return `<button class="c-hint" id="hintBtn"><span><b>Necesitamos una pista</b><small>Si la usan, esta parada no suma puntos</small></span><span class="q">?</span></button>`;
+  return `<button class="c-hint" id="hintBtn"><span><b>Necesitamos una pista</b><small>Si la usan, esta parada vale la mitad: 5 puntos</small></span><span class="q">?</span></button>`;
 }
 const fmtDist = m => m>=1000 ? `${(m/1000).toFixed(1).replace('.',',')} km` : `${Math.round(m/10)*10} m`;
 function body(){
@@ -324,8 +325,9 @@ function bind(){
   const ni = $('#nmInput'); if (ni) ni.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); saveName(); } };
   const ne = $('#nmEdit'); if (ne) ne.onclick = () => { editingName = true; render(); $('#nmInput')?.focus(); };
   document.querySelectorAll('[data-leg]').forEach(b => b.onclick = () => answerLeg(b.dataset.leg === 'yes'));
-  const hb = $('#hintBtn'); if (hb) hb.onclick = () => { modal = {title:'¿Usar la pista?', body:'Si usan la pista, esta parada no suma puntos: 0 en vez de 10. El reloj sigue corriendo.', yes:'Sí, dame la pista', no:'Seguimos intentando', danger:true,
-    onYes: () => act(async () => { await rpc('hunt_hint', {p_token:TOKEN}); await load(); toast('Pista desbloqueada. Esta parada queda en 0 puntos.'); })}; render(); };
+  const ph = $('#pzHelp'); if (ph) ph.onclick = () => { puz.help[curN()] = true; render(); };
+  const hb = $('#hintBtn'); if (hb) hb.onclick = () => { modal = {title:'¿Usar la pista?', body:'Si usan la pista, esta parada vale la mitad: 5 puntos en vez de 10. El reloj sigue corriendo.', yes:'Sí, dame la pista', no:'Seguimos intentando', danger:true,
+    onYes: () => act(async () => { await rpc('hunt_hint', {p_token:TOKEN}); await load(); toast('Pista desbloqueada. Esta parada vale 5 puntos.'); })}; render(); };
   const tb = $('#taxiBtn'); if (tb) tb.onclick = () => { const k = ST.taxis; const extra = k >= ST.taxiLimit;
     modal = {title:`¿Registrar el taxi ${k+1}?`, body: extra ? `Ya usaron los ${ST.taxiLimit}. Este taxi extra resta ${HUNT.taxiPenalty} puntos.` : `Llevan ${k} de ${ST.taxiLimit}. Los cuatro van juntos en el mismo carro.`, yes:'Sí, registrar', no:'Cancelar', danger:extra,
     onYes: () => act(async () => { const r = await rpc('hunt_taxi', {p_token:TOKEN}); await load(); toast(`Taxi ${r.taxis} registrado.`); })}; render(); };
