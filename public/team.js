@@ -48,12 +48,12 @@ function statusCard(){
     <div class="row foot"><span class="team"><span class="dot" style="background:${esc(ST.team.color)}"></span><span>${esc(ST.team.name)} · ${cur?`parada <b>${cur}</b> de 10`:(started?'<b>10 de 10</b>':'por salir')}</span></span>${sides?`<button class="t-link" data-go="sides">Side quests · ${sides}</button>`:''}</div>
   </section>`;
 }
-function dropInput(key, kind){
+function dropInput(key, kind, sub){
   const staged = pending[key];
   const accept = kind==='voice' ? 'audio/*' : 'image/*';
   const inner = staged?.img ? `<img src="${staged.img}" alt="Foto elegida"><small>Toquen para cambiarla</small>`
     : staged ? `${ICON.mic}<b>${esc(staged.fileName)}</b><small>Toquen para cambiarla</small>`
-    : `${kind==='voice'?ICON.mic:ICON.cam}<b>${kind==='voice'?'Grabar o subir nota de voz':'Tomar o subir la foto'}</b><small>${kind==='voice'?'Audio del celular o de WhatsApp':'Todo el equipo en la foto'}</small>`;
+    : `${kind==='voice'?ICON.mic:ICON.cam}<b>${kind==='voice'?'Grabar o subir nota de voz':'Tomar o subir la foto'}</b><small>${sub || (kind==='voice'?'Audio del celular o de WhatsApp':'Todo el equipo en la foto')}</small>`;
   return `<label class="t-drop" for="in-${key}">${inner}</label><input class="vh" type="file" id="in-${key}" accept="${accept}">`;
 }
 function proofField(key, kind){
@@ -149,7 +149,7 @@ function body(){
       <div class="t-actions"><button class="t-link" data-go="stop">${ST.current?'Volver a la pista':'Volver'}</button></div></section>`;
   if (sc.startsWith('side:')) { const q = ST.sides.find(x=>x.id===sc.slice(5)); if (!q) { screen='sides'; return body(); } const open = !q.status || q.status==='rejected';
     return `<section class="c-cta"><div class="t-eyebrow">Side quest opcional · +${q.pts} pts</div><h3 class="t-h">${esc(q.name)}</h3>${q.clue?poemHTML(q.clue):''}<p class="t-p"><b>${esc(q.ask)}</b>${q.place?` · ${esc(q.place)}`:''}${q.note?` · ${esc(q.note)}`:''}</p>
-      ${open?`${dropInput(q.id,'photo')}<div class="err" id="err-${esc(q.id)}"></div><button class="t-primary terra" data-submit="${esc(q.id)}" ${busy?'disabled':''}><span>${busy?'Enviando…':'Enviar'}</span>${arrow}</button>`:`<p><span class="chip ${q.status==='approved'?'ok':'pend'}">${q.status==='approved'?'Aprobado':'En revisión'}</span></p>`}
+      ${open?`${dropInput(q.id,'photo','Una foto clara como prueba')}<div class="err" id="err-${esc(q.id)}"></div><button class="t-primary terra" data-submit="${esc(q.id)}" ${busy?'disabled':''}><span>${busy?'Enviando…':'Enviar'}</span>${arrow}</button>`:`<p><span class="chip ${q.status==='approved'?'ok':'pend'}">${q.status==='approved'?'Aprobado':'En revisión'}</span></p>`}
       <div class="t-actions"><button class="t-link" data-go="sides">Volver</button></div></section>`; }
   if (sc.startsWith('redo:')) { const p = ST.progress.find(x=>x.n===+sc.slice(5)); if (!p || p.status!=='rejected') { screen='stop'; return body(); } const key='s'+p.n;
     return `<section class="c-cta" id="cta"><div class="t-eyebrow">Parada ${p.n} · Reenviar</div><h3 class="t-h">${esc(p.ask)}</h3><p class="t-note">Rechazada: ${esc(p.note||'no cumple la prueba')}</p>
