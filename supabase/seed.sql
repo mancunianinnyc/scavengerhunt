@@ -66,7 +66,7 @@ on conflict (n) do update set name = excluded.name, clue = excluded.clue, ask = 
 
 insert into hunt.sides (id, name, place, pts, after_stop, ask, sort) values
 ('coin', 'La moneda más antigua', 'Casa de Moneda, junto al Botero', 20, 2, 'Foto de la moneda colombiana más antigua en exhibición', 1),
-('terminal', 'Tiquete a la batalla', 'Terminal Salitre', 50, 6, '7 de agosto de 1819. Compren el tiquete y muéstrenlo en FRANC', 2),
+('terminal', 'Una fecha histórica', 'Terminal Salitre', 50, 6, 'Compren el tiquete y mándennos una foto. Guárdenlo: se los pedimos al final.', 2),
 ('novios', 'Foto de prom', 'Parque de Los Novios', 20, 8, 'Foto en el puente del lago, como si fueran al prom', 3)
 on conflict (id) do update set name = excluded.name, place = excluded.place, pts = excluded.pts, after_stop = excluded.after_stop, ask = excluded.ask, sort = excluded.sort;
 
@@ -83,3 +83,11 @@ insert into hunt.teams (id, name, color, token, depart, is_test)
 select v.id, v.name, v.color, translate(encode(extensions.gen_random_bytes(9), 'base64'), '+/', '-_'), now() - interval '1 minute', true
 from (values ('prueba-ross','Prueba Ross','#16347F'), ('prueba-julia','Prueba Julia','#8A3FA0')) as v(id, name, color)
 on conflict (id) do nothing;
+
+-- Side quest riddles (Julia's); a side quest with a clue never sends its place to teams.
+update hunt.sides set clue = $q$Es un Salitre, pero no el mágico,
+aquí las esperas se pueden poner trágicos.
+Desde acá encontrarás buses hacia cualquier destino,
+vayan y compren un tiquete para el departamento vinculado a este datico:
+
+7 de agosto de 1819$q$ where id = 'terminal';

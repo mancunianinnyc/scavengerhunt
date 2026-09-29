@@ -1,0 +1,1 @@
+-- 007 (applied 2026-09-29): hunt.sides.clue; hunt_state sends place only for side quests without a clue. Terminal side quest now uses Julia's riddle.
