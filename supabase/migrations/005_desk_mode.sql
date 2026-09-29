@@ -1,0 +1,2 @@
+-- 005 (applied 2026-09-29): hunt_state exposes team.isTest; hunt_checkin_demo(p_token) = simulated successful
+-- check-in at the current stop, test teams only (raises 'test_only' otherwise). Full bodies as applied via MCP.

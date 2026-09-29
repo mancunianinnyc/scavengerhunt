@@ -72,6 +72,7 @@ function ctaCard(){
       <button class="t-primary" id="checkinBtn" ${busy?'disabled':''}><span>${busy?'Buscando su ubicación…':'Estamos aquí · hacer check-in'}</span>${ICON.pin}</button>
       ${g.fail||g.miss?`<div class="geo-alt"><p class="t-p">${g.fail?'No pudimos leer su ubicación.':'¿Seguros que están en el lugar?'} Pueden hacer check-in sin GPS y los quizmasters lo confirman.</p>
         <button class="t-link" id="checkinManual" style="align-self:flex-start">Hacer check-in sin GPS</button></div>`:''}
+      ${ST.team.isTest?`<div class="demo-row"><span>Modo prueba · solo equipos de prueba</span><div><button id="simHere">Simular: estamos aquí</button><button id="simFar">Simular: lugar equivocado</button></div></div>`:''}
       ${redoNotice()}</section>`;
   }
   const key='s'+c.n;
@@ -199,6 +200,9 @@ function bind(){
     x.onkeydown = e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); const k=x.id.slice(3); document.querySelector(`[data-submit="${k}"],[data-resubmit="${k}"]`)?.click(); } }; });
   const cb = $('#checkinBtn'); if (cb) cb.onclick = checkIn;
   const cm = $('#checkinManual'); if (cm) cm.onclick = manualCheckin;
+  const sh = $('#simHere'); if (sh) sh.onclick = () => { const n = curN(); act(async () => { const r = await rpc('hunt_checkin_demo', {p_token:TOKEN});
+    geo = {}; celebration = {eyebrow:`Parada ${n}`, title:'¡Correcto!', body:`Encontraron ${r.name}. Ahora, el reto.`, cta:'Ver el reto', fx:'normal'}; await load(); }); };
+  const sf = $('#simFar'); if (sf) sf.onclick = () => { const d = Math.round(600 + Math.random()*2400); geo = {miss:d}; missFx = d; render(); };
   const hb = $('#hintBtn'); if (hb) hb.onclick = () => { modal = {title:'¿Usar la pista?', body:'Si usan la pista, esta parada no suma puntos: 0 en vez de 10. El reloj sigue corriendo.', yes:'Sí, dame la pista', no:'Seguimos intentando', danger:true,
     onYes: () => act(async () => { await rpc('hunt_hint', {p_token:TOKEN}); await load(); toast('Pista desbloqueada. Esta parada queda en 0 puntos.'); })}; render(); };
   const tb = $('#taxiBtn'); if (tb) tb.onclick = () => { const k = ST.taxis; const extra = k >= ST.taxiLimit;
