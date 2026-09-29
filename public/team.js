@@ -25,7 +25,7 @@ function readToken(){
 async function load(){
   ST = await rpc('hunt_state', {p_token: TOKEN});
   syncClock(ST.now);
-  if (ST.current && !ST.current.checkin && typeof puz !== 'undefined') { delete puz.letters[ST.current.n]; delete puz.vals[ST.current.n]; delete puz.marks[ST.current.n]; }
+  if (ST.current && !ST.current.checkin && typeof puz !== 'undefined') { delete puz.letters[ST.current.n]; delete puz.vals[ST.current.n]; delete puz.marks[ST.current.n]; delete puz.pick[ST.current.n]; delete puz.shown[ST.current.n]; }
 }
 function sig(){ return ST ? JSON.stringify([ST.progress.map(p=>[p.n,p.status]), ST.sides.map(s=>[s.id,s.status]), ST.current?.n, !!ST.current?.checkin, ST.taxis, ST.team.name, ST.team.depart]) : ''; }
 
@@ -87,7 +87,7 @@ function ctaCard(){
 }
 
 /* Stop-1 style puzzle: fill the missing letters (checked on the server), then unscramble them. */
-const puz = {vals:{}, letters:{}, marks:{}};
+const puz = {vals:{}, letters:{}, marks:{}, pick:{}, shown:{}};
 try { Object.assign(puz.letters, JSON.parse(sessionStorage.getItem('hunt-puz') || '{}')); } catch(_) {}
 function puzzleHTML(c){
   const n = c.n, key = 's'+n;
@@ -100,11 +100,18 @@ function puzzleHTML(c){
       <button class="t-primary terra" id="pzCheck" ${busy?'disabled':''}><span>${busy?'Comprobando…':'Comprobar letras'}</span>${arrow}</button>`;
   }
   const L = puz.letters[n].split('');
-  return `<h3 class="t-h">Las letras esconden una palabra</h3><p class="t-p">Reorganícenlas y escriban la palabra para desbloquear la siguiente pista.</p>
-    <div class="pz-tiles" aria-label="Letras: ${L.join(' ')}">${L.map((ch,i) => `<span class="pz-tile" style="--i:${i}">${esc(ch)}</span>`).join('')}</div>
-    <textarea class="t-input pz-word" id="in-${key}" rows="1" placeholder="La palabra escondida…" autocapitalize="characters" spellcheck="false">${esc(drafts[key]||'')}</textarea>
+  const pick = puz.pick[n] || (puz.pick[n] = []);
+  const word = pick.map(i => L[i]).join('');
+  const intro = !puz.shown[n]; puz.shown[n] = true;
+  return `<h3 class="t-h">Las letras esconden una palabra</h3><p class="t-p">Toquen las letras en orden para formarla.</p>
+    <div class="pz-grid pz-slots" aria-label="Su palabra">${L.map((_,k) => pick[k] != null
+      ? `<button class="pz-cell pz-slot filled" data-unpick="${k}" aria-label="Quitar ${esc(L[pick[k]])}">${esc(L[pick[k]])}</button>`
+      : `<span class="pz-cell pz-slot"></span>`).join('')}</div>
+    <div class="pz-grid pz-tiles ${intro?'intro':''}">${L.map((ch,i) => `<button class="pz-cell pz-tile ${pick.includes(i)?'used':''}" style="--i:${i}" data-pick="${i}" ${pick.includes(i)?'disabled':''} aria-label="Letra ${esc(ch)}">${esc(ch)}</button>`).join('')}</div>
+    <input type="hidden" id="in-${key}" value="${esc(word)}">
     <div class="err" id="err-${key}"></div>
-    <button class="t-primary terra" data-submit="${key}" ${busy?'disabled':''}><span>${busy?'Comprobando…':'Comprobar palabra'}</span>${arrow}</button>`;
+    <button class="t-primary terra" data-submit="${key}" ${busy||pick.length<L.length?'disabled':''}><span>${busy?'Comprobando…':'Comprobar palabra'}</span>${arrow}</button>
+    ${pick.length?'<button class="t-link" id="pzClear" style="align-self:flex-start">Borrar y empezar de nuevo</button>':''}`;
 }
 function checkLetters(){
   const n = curN(); const boxes = [...document.querySelectorAll('.pz-box')];
@@ -218,6 +225,7 @@ async function submit(key, resubmit){
       : {eyebrow:`Parada ${n} completa`, title: kind==='phrase' ? (puz.letters[n] ? '¡MAESTRO!' : '¡Frase correcta!') : '¡Reto enviado!', body: kind==='phrase' ? 'Exacto. La siguiente pista ya está desbloqueada.' : 'Los quizmasters revisan su prueba. Mientras tanto, sigan.', cta:`Pista ${curN()}`, side, fx: kind==='phrase' ? 'normal' : 'small'};
     screen = 'stop';
   });
+  if (wrong && ST.current?.puzzle) { puz.pick[ST.current.n] = []; render(); }
   if (wrong) shake(key, ST.current?.puzzle ? 'Esa no es la palabra. Reorganicen las letras.' : 'Esa no es. Levanten los ojos otra vez.');
 }
 function bind(){
@@ -238,6 +246,9 @@ function bind(){
     geo = {}; celebration = {eyebrow:`Parada ${n}`, title:'¡Correcto!', body:`Encontraron ${r.name}. Ahora, el reto.`, cta:'Ver el reto', fx:'normal'}; await load(); }); };
   const sf = $('#simFar'); if (sf) sf.onclick = () => { const d = Math.round(600 + Math.random()*2400); geo = {miss:d}; missFx = d; render(); };
   const pc = $('#pzCheck'); if (pc) pc.onclick = checkLetters;
+  document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { const n = curN(); const p = puz.pick[n] ||= []; const i = +b.dataset.pick; if (!p.includes(i)) p.push(i); render(); });
+  document.querySelectorAll('[data-unpick]').forEach(b => b.onclick = () => { const n = curN(); puz.pick[n].splice(+b.dataset.unpick, 1); render(); });
+  const pzc = $('#pzClear'); if (pzc) pzc.onclick = () => { puz.pick[curN()] = []; render(); };
   const boxes = [...document.querySelectorAll('.pz-box')];
   boxes.forEach((bx, i) => {
     bx.oninput = () => { bx.value = bx.value.slice(-1).toUpperCase(); bx.classList.remove('bad','ok'); (puz.vals[curN()] ||= [])[i] = bx.value; if (puz.marks[curN()]) puz.marks[curN()][i] = null; if (bx.value && boxes[i+1]) boxes[i+1].focus(); };

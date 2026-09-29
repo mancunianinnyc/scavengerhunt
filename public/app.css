@@ -344,12 +344,18 @@ td.total{font-family:var(--display);font-size:22px;color:var(--navy)}
 .pz-box:focus{outline:none;background:var(--warn-bg);border-bottom-color:var(--terracotta)}
 .pz-box.ok{background:#F6E6BC;border-bottom-color:var(--gold)}
 .pz-box.bad{background:var(--bad-bg);border-bottom-color:var(--bad);color:var(--bad)}
-.pz-tiles{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin:4px 0 2px}
-.pz-tile{width:40px;height:48px;border-radius:9px;background:var(--navy);color:var(--gold);font-family:var(--display);font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 0 var(--navy-deep)}
-.pz-word{text-align:center;letter-spacing:.2em;text-transform:uppercase;font-style:normal}
+.pz-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.pz-cell{aspect-ratio:5/6;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:clamp(20px,6.2vw,27px);line-height:1;padding:0;min-width:0}
+.pz-slot{border:1.5px dashed var(--line);background:var(--paper);color:var(--navy)}
+.pz-slot.filled{border:1.5px solid var(--gold);background:#F6E6BC;cursor:pointer}
+.pz-tile{border:0;background:var(--navy);color:var(--gold);box-shadow:0 3px 0 var(--navy-deep);cursor:pointer;transition:transform .12s,opacity .15s}
+.pz-tile:active{transform:translateY(2px);box-shadow:0 1px 0 var(--navy-deep)}
+.pz-tile.used{opacity:.18;box-shadow:none;cursor:default}
 @media (prefers-reduced-motion:no-preference){
-  .pz-tile{animation:tileIn .45s cubic-bezier(.2,1.5,.4,1) both;animation-delay:calc(var(--i) * 80ms)}
+  .pz-tiles.intro .pz-tile{animation:tileIn .45s cubic-bezier(.2,1.5,.4,1) both;animation-delay:calc(var(--i) * 80ms)}
+  .pz-slot.filled{animation:slotIn .2s ease-out}
   .pz-box.bad{animation:boxShake .4s}
 }
 @keyframes tileIn{from{opacity:0;transform:translateY(-18px) rotate(-12deg) scale(.6)}to{opacity:1;transform:none}}
 @keyframes boxShake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+@keyframes slotIn{from{transform:scale(.7)}to{transform:none}}
