@@ -51,7 +51,7 @@ const ord = n => n + (['st','nd','rd'][n-1] || 'th');
 function departLabel(t){
   if (t.depart == null) return '<span class="chip idle">Waiting</span>';
   if (now() < t.depart) return `<span class="chip pend">Leaves ${hm(t.depart)} · in ${Math.max(1, Math.round((t.depart - now())/60000))} min</span>`;
-  if (finishT(t)) return `<span class="chip ok">At FRANC · ${dur(elapsed(t))}</span>`;
+  if (finishT(t)) return `<span class="chip ok">Finished · ${dur(elapsed(t))}</span>`;
   return `<span class="chip ok">Out since ${hm(t.depart)}</span>`;
 }
 function teamsPanel(){
@@ -101,7 +101,7 @@ function queuePanel(){
 function leaderboardPanel(R){
   const rows = R.map(({t,s},i) => {
     const c = currentStop(t);
-    const where = t.depart == null ? 'waiting to start' : now() < t.depart ? `leaves ${hm(t.depart)}` : !c ? 'at FRANC' : `→ ${c}. ${STOPS[c-1]?.name || ''}`;
+    const where = t.depart == null ? 'waiting to start' : now() < t.depart ? `leaves ${hm(t.depart)}` : !c ? 'finished' : `→ ${c}. ${STOPS[c-1]?.name || ''}`;
     const row = `<tr class="lb" data-row="${esc(t.id)}"><td class="rank">${i+1}</td><td class="l"><div class="tname"><span class="dot" style="background:${esc(t.color)}"></span>${esc(t.name)}</div><div class="muted" style="font-size:12px">${esc(where)}</div></td>
       <td>${s.stops}/10</td><td class="mono">${started(t)?dur(elapsed(t)):'—'}</td><td class="${s.extraTaxis?'neg':''}">${t.taxis.length}/${taxiLimit()}</td><td>${s.hintsUsed}</td>
       <td>${s.stopPts}</td><td>${s.placeN?`${s.place} <span class="muted">(${ord(s.placeN)})</span>`:'<span class="muted">—</span>'}</td><td>${s.quiz}</td><td>${s.side+s.acts}</td><td class="${s.pen?'neg':''}">${s.pen?'−'+s.pen:0}</td><td class="total">${s.total}</td></tr>`;
@@ -116,7 +116,7 @@ function leaderboardPanel(R){
     </div></td></tr>` : '';
     return row + bd;
   }).join('');
-  return `<section class="panel"><div class="panel-h"><h2>Leaderboard</h2><p>Hidden from teams. Tap a team for its breakdown. Placement is provisional until everyone reaches FRANC.</p></div>
+  return `<section class="panel"><div class="panel-h"><h2>Leaderboard</h2><p>Hidden from teams. Tap a team for its breakdown. Placement is provisional until every team has finished.</p></div>
     <div class="scroll"><table><thead><tr><th></th><th>Team</th><th>Stops</th><th>Elapsed</th><th>Taxis</th><th>Hints</th><th>Stop pts</th><th>Placement</th><th>Quiz</th><th>Side</th><th>Pen.</th><th>Total</th></tr></thead><tbody>${rows || '<tr><td colspan="12" class="l muted">No teams yet.</td></tr>'}</tbody></table></div></section>`;
 }
 function scorePanel(){
@@ -149,7 +149,7 @@ function rulesPanel(){
     <p class="formula">Total = 10 × approved stops without a hint + placement bonus + quiz points + side quests + awards − taxi penalty ± manual</p>
     <div class="rules">
       <div class="rule"><h5>Stops</h5><ul><li>10 pts per approved stop, 10 stops, max 100.</li><li>Arrival is a GPS check-in within 250–400 m. A no-GPS check-in is allowed and flagged here.<span class="prop">Proposed</span></li><li>Phrase answers auto-check. Photos and voice notes unlock the next clue on submit; a rejected proof scores 0 until resubmitted.</li><li>Using a hint: that stop scores 0.<span class="prop">Proposed</span></li></ul></div>
-      <div class="rule"><h5>Placement</h5><ul><li>Clock runs from each team's own departure to its FRANC photo.</li><li>Fastest three: 50 / 30 / 20.</li><li>FRANC after 18:00 earns no placement bonus.<span class="prop">Proposed</span></li><li>Tie-break: faster elapsed time.</li></ul></div>
+      <div class="rule"><h5>Placement</h5><ul><li>Clock runs from each team's own departure to its final-stop photo.</li><li>Fastest three: 50 / 30 / 20.</li><li>Finishing after 18:00 earns no placement bonus.<span class="prop">Proposed</span></li><li>Tie-break: faster elapsed time.</li></ul></div>
       <div class="rule"><h5>Quizzes</h5><ul><li>Universities 1 each. Localidades 1 each, doubled for all 20.</li><li>Water bodies 2 each. Poets 3, writers 2, musicians 1.</li><li>3 minutes per quiz, phones away.<span class="prop">Proposed</span></li></ul></div>
       <div class="rule"><h5>Extras &amp; penalties</h5><ul><li>Coin 20 · Boyacá ticket 50 · Prom photo 20 · Drink can 10 · Theatron award 10.</li><li>Each taxi beyond ${taxiLimit()}: −10.<span class="prop">Proposed</span></li></ul></div>
     </div></section>`;
@@ -160,12 +160,12 @@ function adminView(){
   const out = ev.filter(t => started(t) && !finishT(t)).length, fin = ev.filter(t => finishT(t)).length;
   let pend = 0; ev.forEach(t => Object.values(t.subs).forEach(s => { if (s.status === 'pending') pend++; }));
   const kpis = `<div class="kpis">
-    <div class="kpi"><div class="k">On the route</div><div class="v num">${out}</div><div class="s">${fin} at FRANC · ${ev.length-out-fin} not started</div></div>
+    <div class="kpi"><div class="k">On the route</div><div class="v num">${out}</div><div class="s">${fin} finished · ${ev.length-out-fin} not started</div></div>
     <div class="kpi ${pend?'alert':''}"><div class="k">Proofs to review</div><div class="v num">${pend}</div><div class="s">${pend?'see the queue below':'queue clear'}</div></div>
     <div class="kpi"><div class="k">Leader right now</div><div class="v" style="font-size:22px">${R[0] ? esc(R[0].t.name) : '—'}</div><div class="s">${R[0] ? R[0].s.total + ' pts · hidden from teams' : ''}</div></div>
     <div class="kpi"><div class="k">Teams</div><div class="v num">${TEAMS.filter(t=>!t.isTest).length}</div><div class="s">${CFG.stagger ?? 10} min apart by default</div></div></div>`;
   return `<div class="admin">${kpis}${queuePanel()}${leaderboardPanel(R)}${teamsPanel()}<div class="grid2">${scorePanel()}${rulesPanel()}</div>${matrixPanel()}
-    <section class="panel"><div class="panel-h"><h2>Finish &amp; reveal</h2><p>At FRANC, run the reveal on a phone or laptop: last place first.</p></div><div class="demo-ctl"><button class="btn terra" id="revealBtn">Start the reveal</button></div></section></div>
+    <section class="panel"><div class="panel-h"><h2>Finish &amp; reveal</h2><p>At the finish, run the reveal on a phone or laptop: last place first.</p></div><div class="demo-ctl"><button class="btn terra" id="revealBtn">Start the reveal</button></div></section></div>
     ${overlay()}`;
 }
 function overlay(){
