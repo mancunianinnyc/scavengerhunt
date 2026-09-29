@@ -137,3 +137,8 @@ update hunt.stops set hint = '¿El Libertador dónde durmió?' where n = 4;
 update hunt.stops set hint = '¿Dónde está la otra sede de Matorral?' where n = 6;
 update hunt.stops set clue = replace(clue, E'\nNombrado por un presidente', E'\nnombrado por un presidente') where n = 8;
 update hunt.stops set hint = '¿''La Capilla'' se encuentra en qué discoteca?' where n = 9;
+-- Stop 4 (Julia, 29 Sep): drop "cosas", keep "otras"
+update hunt.stops set clue = replace(clue, 'entre esas dos cosas, liberó cuatro.', 'entre esas dos, liberó cuatro otras.') where n = 4;
+-- Stop 3: typed inscription (see migration 012)
+update hunt.stops set proof = 'phrase', ask = 'Completen la inscripción de La Pola', answer_prefix = 'Aunque mujer y joven,',
+  answer_words = '{sobra,valor,sufrir,muerte,libertad}', lat = 4.6026, lng = -74.0668, radius = 400 where n = 3;
