@@ -92,6 +92,7 @@ Event teams: `t1..t5` "Equipo 1–5", no members, **waiting** (not started). Sta
 - [ ] **Print** Quiz 1 (Ross) and Quiz 2 (Julia) — both 2 pages, updated 30 Sep; bring pens.
 - [ ] **Day-before reset:** reset both test teams; confirm event teams have no progress (they don't today).
 - [ ] **Share the admin passcode with Julia**; both test the admin on phones.
+- [ ] **WhatsApp notifier (§10):** Ross re-links Pipo's WhatsApp (logged out since 27 Sep), ~~re-link + end-to-end test~~ done 30 Sep; Saturday morning switch to `live`.
 
 **Decisions still open (Julia)**
 - [x] Quiz points vs speed → **combined quiz cap 70** (30 Sep).
@@ -104,6 +105,7 @@ Event teams: `t1..t5` "Equipo 1–5", no members, **waiting** (not started). Sta
 
 1. **At the park (09:45):** make 5 teams (≥1 Bogotano each). In admin, type members per team, **Copy link** → paste into each team's WhatsApp group. Tell teams: open the link, allow **location**, keep data on.
 2. Teams name themselves on the waiting screen.
+   - Before the first start: `ssh openclaw-vps '~/scripts/hunt-notify/hunt-notify.sh mode live'` (WhatsApp updates to Ross + Julia; see §10). The admin page stays the source of truth if WhatsApp drops.
 3. Start: either **Start now** per team as each leaves (10 min apart), or "Shuffle order & schedule" from 10:00 / 10 min.
 4. During: watch the **Review queue** (approve/reject photos), no-GPS check-ins are flagged amber. Ross runs Quiz 1 at Quinta de Bolívar, Julia Quiz 2 at Virgilio Barco — photo the sheets, enter counts in "Quizzes & awards".
 5. **At FRANC:** teams confirm taxis on their phones; award Theatron photo + drink can; check poets/writers/musicians from Quiz 2 notes; enter totals; open **Reveal**.
@@ -113,6 +115,16 @@ Event teams: `t1..t5` "Equipo 1–5", no members, **waiting** (not started). Sta
 
 - ~~Photo slideshow~~ and ~~zip export~~ — built 30 Sep. Still to do after the event: purge `hunt.subs.media` (it lives in the Personal Library project).
 - ~~Share card~~ — built 30 Sep.
-- WhatsApp hunt agent via OpenClaw (the original "Pipo" idea) for nudges/commentary — deferred.
+- ~~WhatsApp updates via Pipo~~ — built 30 Sep, see §10. Pipo-voiced commentary (model in the loop) still deferred.
 - GPS-speed taxi inference — discussed and **rejected** in favour of the per-leg question.
 - Crowd vote for the Theatron photo, team chants, nemesis/dares (social ideas from the first session).
+
+## 10. WhatsApp updates via Pipo (built 30 Sep)
+
+Plain templated messages in English to the quizmasters, no model involved.
+
+- **Feed:** `public.hunt_feed(p_key, p_since, p_tests)` (migration 014) — read-only event lines after a cursor: set off · reached stop N (elapsed, taxis) · check-in without GPS (warning) · typed answer solved · photo to review (stops + side quests, "second try" on resubmission) · FINISHED with final time. Never returns photos. The final stop is written "final stop", never by name. Authenticated by its **own feed key** (sha256 in `hunt.config.feed_hash`; the key lives only on the VPS in `~/scripts/hunt-notify/feed.key`) — the VPS never holds the admin passcode.
+- **Sender:** `~/scripts/hunt-notify/hunt-notify.sh` on the OpenClaw VPS (source: `Claude Workspace\openclaw-pipo\hunt-notify\`). Host crontab runs it every minute; it polls 4× per minute (≤ ~20 s delay) and sends with `docker exec openclaw-gateway openclaw message send`. Events in the same poll are joined into one message. If nothing could be delivered the cursor stays put, so they go out on the next poll (replay capped at 6 h).
+- **Modes:** `hunt-notify.sh mode off|test|live`, `hunt-notify.sh status`. `test` = test teams included, Ross only. `live` = event teams only, Ross + Julia. Changing mode restarts from "now". Switches itself off after 36 h. Log: `~/scripts/hunt-notify/notify.log`. Dry run: `DRY=1 ./hunt-notify.sh once`.
+- **State 30 Sep:** WhatsApp re-linked by Ross (afternoon). **End-to-end verified 19:09 UTC**: a test check-in + photo reached Ross's WhatsApp 22 s after the event (gateway: `Sent message … 658ms`). Mode left on **`test`** for Ross's own tap-through on Prueba Ross. Fixed in that test: switching mode now sets the cursor to the switch time (before, events between the switch and the first cron poll were dropped).
+- After the event: `mode off`, remove the crontab line, `update hunt.config set feed_hash = null`.
