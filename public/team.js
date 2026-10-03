@@ -85,6 +85,7 @@ function ctaCard(){
     ${legQuestionHTML()}</section>`;
   if (legMode(c) === 'bus' && (!c.bus || c.bus === 'rejected') && !busSkip[c.n]) return busSelfieHTML(c, ci);
   return `<section class="c-cta" id="cta"><div class="t-eyebrow">Parada ${c.n} · El reto</div>
+    ${TRIVIA[c.n] ? `<div class="tr-banner">Trivia aquí: busquen a ${esc(TRIVIA[c.n].who)} ${esc(TRIVIA[c.n].where)} antes de seguir.</div>` : ''}
     <div class="t-ok">${ICON.check}<span>${ci.ok?'Check-in confirmado':'Check-in sin GPS'} · ${esc(ci.name)} · ${hm(ci.t)}</span></div>
     ${c.puzzle ? puzzleHTML(c) : `<h3 class="t-h">${esc(c.ask)}</h3>${c.qm?`<p class="t-note">${esc(c.qm)}</p>`:''}
     ${proofField(key, c.proof, c.prefix, /selfie|pose/i.test(c.ask) ? null : 'Una foto clara basta')}<div class="err" id="err-${key}"></div>
@@ -170,6 +171,18 @@ function saveName(){
 /* After every check-in: how did they get here? Walk, bus (+5 with a selfie) or taxi (counts toward the limit). */
 const legMode = c => c ? (c.legMode !== undefined ? c.legMode : (c.legTaxi == null ? null : (c.legTaxi ? 'taxi' : 'walk'))) : null;
 let busSkip = {};
+/* Stops where a quizmaster runs live trivia: after check-in, a popup tells the team to find them first (event-day fix, 3 Oct). */
+const TRIVIA = {4:{who:'Ross', where:'en la entrada de la Quinta de Bolívar', what:'universidades y localidades de Bogotá'}, 8:{who:'Julia', where:'adentro de la biblioteca', what:'cuerpos de agua y figuras culturales'}};
+let triviaSeen = {};
+try { triviaSeen = JSON.parse(localStorage.getItem('hunt-trivia-seen') || '{}'); } catch(_) {}
+function triviaPopupHTML(){
+  const c = ST?.current; if (!c || !c.checkin || legMode(c) == null || screen !== 'stop') return '';
+  const tv = TRIVIA[c.n]; if (!tv || triviaSeen[c.n]) return '';
+  return `<div class="scrim" id="trScrim"><div class="sheet trivia" role="alertdialog" aria-modal="true" aria-labelledby="trH">
+    <div class="tr-stop">¡Alto!</div><h3 id="trH">Busquen a ${esc(tv.who)} para la trivia</h3>
+    <p><b>Antes de seguir</b>, todo el equipo tiene que encontrar a ${esc(tv.who)} ${esc(tv.where)}. Les toca una ronda de trivia: ${esc(tv.what)}. Son puntos que no quieren perderse.</p>
+    <div class="btns"><button class="t-primary terra" id="trOk"><span>Ya estamos con ${esc(tv.who)}</span>${arrow}</button></div></div></div>`;
+}
 try { busSkip = JSON.parse(sessionStorage.getItem('hunt-busskip') || '{}'); } catch(_) {}
 function legQuestionHTML(dark){
   const k = ST.taxis, next = k + 1, extra = next > ST.taxiLimit;
@@ -281,6 +294,7 @@ function overlay(){
         <span class="tr-eyebrow">Side quest desbloqueado</span><b>${esc(c.side.name)}</b><span class="s">+${c.side.pts} pts · ${esc(sidePlace(c.side))}</span>
         <span class="tr-opt">Opcional · puntos extra si deciden desviarse</span></button>`:''}
       ${c.taxiAsk && ST.current?.checkin && legMode(ST.current) == null ? legQuestionHTML(true) : `<button class="t-primary" id="celGo"><span>${esc(c.cta)}</span>${arrow}</button>`}</div>`; }
+  if (!modal) { const tp = triviaPopupHTML(); if (tp) return tp; }
   if (modal) { const m = modal;
     return `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mH"><h3 id="mH">${esc(m.title)}</h3><p>${esc(m.body)}</p>
       <div class="btns"><button class="t-primary ${m.danger?'terra':''}" id="mYes"><span>${esc(m.yes)}</span>${arrow}</button><button class="sec" id="mNo">${esc(m.no)}</button></div></div></div>`; }
@@ -390,6 +404,7 @@ function bind(){
     onYes: () => act(async () => { const r = await rpc('hunt_taxi', {p_token:TOKEN}); await load(); toast(`Taxi ${r.taxis} registrado.`); })}; render(); };
   const my = $('#mYes'); if (my) { my.focus(); my.onclick = () => { const f = modal.onYes; modal = null; f(); }; }
   const mn = $('#mNo'); if (mn) mn.onclick = () => { modal = null; render(); };
+  const tok = $('#trOk'); if (tok) { tok.focus(); tok.onclick = () => { triviaSeen[curN()] = true; try { localStorage.setItem('hunt-trivia-seen', JSON.stringify(triviaSeen)); } catch(_) {} render(); }; }
   const sc = $('#scrim'); if (sc) sc.onclick = e => { if (e.target === sc) { modal = null; render(); } };
   const cg = $('#celGo'); if (cg) { cg.focus({focusVisible:false}); cg.onclick = () => { celebration = null; render(); window.scrollTo(0,0); }; }
   const cs = $('#celSide'); if (cs) cs.onclick = () => { const id = celebration.side.id; celebration = null; go('side:'+id); };

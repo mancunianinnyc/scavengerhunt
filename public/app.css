@@ -491,3 +491,9 @@ td.total{font-family:var(--display);font-size:22px;color:var(--navy)}
 @media (prefers-reduced-motion:no-preference){.share-prev{animation:unearth .6s cubic-bezier(.2,1.3,.4,1) both}}
 .leg-btns.leg3{grid-template-columns:1fr 1fr 1fr}
 .leg-btns.leg3 .t-primary{padding-left:8px;padding-right:8px}
+
+/* trivia stop popup + banner (3 Oct) */
+.sheet.trivia{border:3px solid var(--terracotta)}
+.sheet.trivia .tr-stop{font-family:var(--display);font-size:44px;line-height:1;color:var(--terracotta)}
+.sheet.trivia p b{color:var(--navy)}
+.tr-banner{background:var(--terracotta);color:#fff;border-radius:12px;padding:10px 12px;font-weight:600;font-size:15px}
