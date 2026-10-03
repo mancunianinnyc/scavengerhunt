@@ -2,7 +2,7 @@
    Uses admin.js globals: TEAMS, STOPS, SIDE, KEY, S, mediaCache, finishT. */
 const Photos = (() => {
   const reduce = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const labelOf = k => { if (/^s\d+$/.test(k)) { const st = STOPS.find(x => 's'+x.n === k); return st ? `Parada ${st.n} · ${st.name}` : k; } const q = SIDE.find(x => x.id === k); return q ? `Side quest · ${q.name}` : k; };
+  const labelOf = k => { if (/^s\d+$/.test(k)) { const st = STOPS.find(x => 's'+x.n === k); return st ? `Parada ${st.n} · ${st.name}` : k; } if (/^b\d+$/.test(k)) return `Bus · tramo a parada ${k.slice(1)}`; const q = SIDE.find(x => x.id === k); return q ? `Side quest · ${q.name}` : k; };
   const orderOf = k => /^s\d+$/.test(k) ? +k.slice(1) * 10 : (SIDE.find(x => x.id === k)?.after ?? 5) * 10 + 5;
 
   // every photo that isn't rejected, oldest first

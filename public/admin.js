@@ -44,8 +44,10 @@ function score(t, P){
   const acts = ACTS.reduce((a,x) => a + (t.acts[x.id] ? x.pts : 0), 0) + (CFG.theatron === t.id ? HUNT.theatronBonus : 0);
   const extraTaxis = Math.max(0, taxiCount(t) - taxiLimit());
   const pen = extraTaxis * HUNT.taxiPenalty;
+  const buses = Object.entries(t.subs).filter(([k,v]) => /^b\d+$/.test(k) && v.status === 'approved').length;
+  const bus = buses * HUNT.busBonus;  // +5 per bus leg with an approved selfie
   const adj = Number(t.adj) || 0;
-  return {stops, stopPts, place, placeN:P[t.id]?.place, quiz, quizRaw, side, acts, pen, extraTaxis, hintsUsed:t.hints.length, adj, total: stopPts + place + quiz + side + acts - pen + adj, finished: !!finishT(t)};
+  return {stops, stopPts, place, placeN:P[t.id]?.place, quiz, quizRaw, side, acts, bus, buses, pen, extraTaxis, hintsUsed:t.hints.length, adj, total: stopPts + place + quiz + side + acts + bus - pen + adj, finished: !!finishT(t)};
 }
 function ranked(){ const list = board(); const P = placements(list); return list.map(t => ({t, s:score(t,P)})).sort((a,b) => b.s.total - a.s.total || elapsed(a.t) - elapsed(b.t)); }
 const ord = n => n + (['st','nd','rd'][n-1] || 'th');
@@ -78,7 +80,7 @@ function departLabel(t){
   return `<span class="chip ok">Out since ${hm(t.depart)}</span>`;
 }
 function teamsPanel(){
-  const rows = TEAMS.map(t => `<div class="tm" data-team-row="${esc(t.id)}">
+  const rows = TEAMS.filter(t => S.showTests || !t.isTest).map(t => `<div class="tm" data-team-row="${esc(t.id)}">
       <div class="tm-id"><input type="color" value="${esc(t.color)}" data-color="${esc(t.id)}" aria-label="Team colour">
         <input class="tm-name" value="${esc(t.name)}" data-name="${esc(t.id)}" aria-label="Team name">${t.isTest?'<span class="chip idle">test</span>':''}${t.nameByTeam?'<span class="chip ok" title="The team chose this name">their pick</span>':''}</div>
       <textarea class="tm-members" rows="2" data-members="${esc(t.id)}" placeholder="Members, one per line or comma-separated" aria-label="Members of ${esc(t.name)}">${esc(t.members.join(', '))}</textarea>
@@ -103,18 +105,19 @@ function teamsPanel(){
 }
 function queuePanel(){
   const q = [];
-  TEAMS.forEach(t => Object.entries(t.subs).forEach(([k,s]) => { if (s.status === 'pending') q.push({t,k,s}); }));  // the queue always shows every team, test teams included
+  board().forEach(t => Object.entries(t.subs).forEach(([k,s]) => { if (s.status === 'pending') q.push({t,k,s}); }));  // test teams only with "Show test teams" (event day)
   q.sort((a,b) => a.s.t - b.s.t);
   const items = q.map(({t,k,s}) => {
     const st = /^s\d+$/.test(k) ? STOPS.find(x => 's'+x.n === k) : null; const sq = SIDE.find(x => x.id === k);
-    const title = st ? `Stop ${st.n} · ${st.name}` : `Side quest · ${sq?.name} (${sq?.pts})`;
+    const busN = /^b\d+$/.test(k) ? +k.slice(1) : null;
+    const title = st ? `Stop ${st.n} · ${st.name}` : busN ? `🚌 Bus selfie · leg to stop ${busN} (+${HUNT.busBonus})` : `Side quest · ${sq?.name} (${sq?.pts})`;
     const ci = st ? t.checkins[st.n] : null;
     const mk = `${t.id}|${k}|${s.updated}`; const m = mediaCache[mk];
     let ph;
     if (s.mediaType?.startsWith('audio')) ph = m?.media ? `<audio controls src="${m.media}" style="width:100%"></audio>` : '<div class="ph-load">loading audio…</div>';
     else ph = m?.media ? `<button class="ph-btn" data-zoom="${esc(mk)}"><img src="${m.media}" alt="Proof from ${esc(t.name)}"></button>` : `<div class="ph-load" style="background:${esc(t.color)}">loading…</div>`;
     return `<div class="qi ${s.mediaType?.startsWith('audio')?'audio':''}"><div class="ph">${ph}</div><div class="meta">
-      <b>${esc(t.name)}${t.isTest?' <span class="chip idle">test</span>':''} · ${esc(title)}${s.resub?' · resubmitted':''}</b><span class="muted" style="font-size:12px"><span class="mono">${hm(s.t)}</span> · asked for: ${esc(st ? st.ask : sq?.ask)}</span>
+      <b>${esc(t.name)}${t.isTest?' <span class="chip idle">test</span>':''} · ${esc(title)}${s.resub?' · resubmitted':''}</b><span class="muted" style="font-size:12px"><span class="mono">${hm(s.t)}</span> · asked for: ${esc(st ? st.ask : busN ? 'Team selfie on the bus / at the station' : sq?.ask)}</span>
       ${ci ? (ci.ok ? `<span class="chip ok" style="align-self:flex-start">GPS check-in · ${ci.dist ?? '?'} m</span>` : `<span class="chip pend" style="align-self:flex-start">No-GPS check-in: confirm location</span>`) : ''}
       <div class="acts"><button class="btn sm" data-approve="${esc(t.id)}|${esc(k)}">Approve</button><button class="btn sm ghost" data-reject="${esc(t.id)}|${esc(k)}">Reject</button></div></div></div>`;
   }).join('');
@@ -127,7 +130,7 @@ function leaderboardPanel(R){
     const where = t.depart == null ? 'waiting to start' : now() < t.depart ? `leaves ${hm(t.depart)}` : !c ? 'finished' : `→ ${c}. ${STOPS[c-1]?.name || ''}`;
     const row = `<tr class="lb" data-row="${esc(t.id)}"><td class="rank">${i+1}</td><td class="l"><div class="tname"><span class="dot" style="background:${esc(t.color)}"></span>${esc(t.name)}</div><div class="muted" style="font-size:12px">${esc(where)}</div></td>
       <td>${s.stops}/10</td><td class="mono">${started(t)?dur(elapsed(t)):'—'}</td><td class="${s.extraTaxis?'neg':''}">${taxiCount(t)}/${taxiLimit()}${t.taxiDeclared!=null && t.taxiDeclared!==t.taxis.length?`<div class="muted" style="font-size:11px">logged ${t.taxis.length}</div>`:''}</td><td>${s.hintsUsed}</td>
-      <td>${s.stopPts}</td><td>${s.placeN?`${s.place} <span class="muted">(${ord(s.placeN)})</span>`:'<span class="muted">—</span>'}</td><td>${s.quiz}</td><td>${s.side+s.acts}</td><td class="${s.pen?'neg':''}">${s.pen?'−'+s.pen:0}</td><td class="total">${s.total}</td></tr>`;
+      <td>${s.stopPts}</td><td>${s.placeN?`${s.place} <span class="muted">(${ord(s.placeN)})</span>`:'<span class="muted">—</span>'}</td><td>${s.quiz}</td><td>${s.side+s.acts+s.bus}${s.buses?`<div class="muted" style="font-size:11px">🚌 ${s.buses}</div>`:''}</td><td class="${s.pen?'neg':''}">${s.pen?'−'+s.pen:0}</td><td class="total">${s.total}</td></tr>`;
     const bd = S.expanded === t.id ? `<tr class="bd"><td></td><td colspan="11"><div class="bdgrid">
       <div><span>Stops approved</span><b>${s.stops}, ${s.hintsUsed} with hint · ${s.stopPts}</b></div>
       <div><span>Placement bonus</span><b>${s.placeN?`${ord(s.placeN)} fastest · ${s.place}`:'not finished'}</b></div>
@@ -142,7 +145,7 @@ function leaderboardPanel(R){
     return row + bd;
   }).join('');
   return `<section class="panel"><div class="panel-h"><h2>Leaderboard</h2><p>Hidden from teams. Tap a team for its breakdown. Placement is provisional until every team has finished.</p></div>
-    <div class="scroll"><table><thead><tr><th></th><th>Team</th><th>Stops</th><th>Elapsed</th><th>Taxis</th><th>Hints</th><th>Stop pts</th><th>Placement</th><th>Quiz</th><th>Side</th><th>Pen.</th><th>Total</th></tr></thead><tbody>${rows || '<tr><td colspan="12" class="l muted">No teams yet.</td></tr>'}</tbody></table></div></section>`;
+    <div class="scroll"><table><thead><tr><th></th><th>Team</th><th>Stops</th><th>Elapsed</th><th>Taxis</th><th>Hints</th><th>Stop pts</th><th>Placement</th><th>Quiz</th><th>Side+bus</th><th>Pen.</th><th>Total</th></tr></thead><tbody>${rows || '<tr><td colspan="12" class="l muted">No teams yet.</td></tr>'}</tbody></table></div></section>`;
 }
 function scorePanel(){
   const st = team(S.scoreTeam); if (!st) return '';
@@ -171,12 +174,12 @@ function matrixPanel(){
 }
 function rulesPanel(){
   return `<section class="panel"><div class="panel-h"><h2>Scoring rules v1</h2><p>What this page calculates. <span class="prop">Proposed</span> items still need Julia's yes.</p></div>
-    <p class="formula">Total = 10 per approved stop (5 if the hint was used) + placement bonus + quiz points (max 70) + side quests + awards − taxi penalty ± manual</p>
+    <p class="formula">Total = 10 per approved stop (5 if the hint was used) + placement bonus + quiz points (max 70) + side quests + awards + 5 per bus leg (approved selfie) − taxi penalty ± manual</p>
     <div class="rules">
       <div class="rule"><h5>Stops</h5><ul><li>10 pts per approved stop, 10 stops, max 100.</li><li>Arrival is a GPS check-in within 250–400 m. A no-GPS check-in is allowed and flagged here.<span class="prop">Proposed</span></li><li>Phrase answers auto-check. Photos and voice notes unlock the next clue on submit; a rejected proof scores 0 until resubmitted.</li><li>Using a hint: that stop scores 5 instead of 10 (Julia, 29 Sep).</li></ul></div>
       <div class="rule"><h5>Placement</h5><ul><li>Clock runs from each team's own departure to its final-stop photo.</li><li>Fastest three: 50 / 30 / 20.</li><li>Finishing after 18:00 earns no placement bonus.<span class="prop">Proposed</span></li><li>Tie-break: faster elapsed time.</li></ul></div>
       <div class="rule"><h5>Quizzes</h5><ul><li>Universities 1 each. Localidades 1 each, doubled for all 20.</li><li>Water bodies 2 each. Poets 3, writers 2, musicians 1.</li><li>All four quizzes together count for at most 70.</li><li>3 minutes per quiz, phones away.<span class="prop">Proposed</span></li></ul></div>
-      <div class="rule"><h5>Extras &amp; penalties</h5><ul><li>Coin 20 · Boyacá ticket 50 · Prom photo 20 · Drink can 10 · Theatron award 10.</li><li>Each taxi beyond ${taxiLimit()}: −10.<span class="prop">Proposed</span></li></ul></div>
+      <div class="rule"><h5>Extras &amp; penalties</h5><ul><li>Coin 20 · Boyacá ticket 50 · Prom photo 20 · Drink can 10 · Theatron award 10.</li><li>Each taxi beyond ${taxiLimit()}: −10.</li><li>Bus leg (TransMilenio/SITP): +${HUNT.busBonus} each, with an approved team selfie. After every check-in teams answer walk / bus / taxi.</li></ul></div>
     </div></section>`;
 }
 function adminView(){
@@ -304,7 +307,7 @@ function startReveal(){
     if (i < 0) host.innerHTML = `<div class="eyebrow">El Gran Scavenger Hunt de Bogotá</div><h2>Los resultados</h2><p style="opacity:.8;max-width:460px">${allIn?'Todos los equipos llegaron. Del último al primero.':'Not every team is in yet, so placement bonuses are provisional.'}</p><p class="rv-load" style="opacity:.6;font-size:13px;margin:0"></p><div class="ctrl"><button class="btn" id="rvNext">Empezar</button><button class="btn ghost" id="rvClose">Cerrar</button></div>`;
     else { const {t,s} = order[i]; const place = order.length - i;
       host.innerHTML = `<div class="eyebrow">${place===1?'Campeones de la primera edición':'Puesto'}</div><div class="place">${place}</div><h2>${esc(t.name)}</h2><div class="tot">${s.total} puntos</div>
-      <div class="bd"><span>Paradas <b>${s.stopPts}</b></span><span>Velocidad <b>${s.place}</b></span><span>Trivia <b>${s.quiz}</b></span><span>Side quests <b>${s.side}</b></span><span>Premios <b>${s.acts}</b></span>${s.pen?`<span>Taxis <b>−${s.pen}</b></span>`:''}<span>Tiempo <b>${dur(elapsed(t))}</b></span></div>
+      <div class="bd"><span>Paradas <b>${s.stopPts}</b></span><span>Velocidad <b>${s.place}</b></span><span>Trivia <b>${s.quiz}</b></span><span>Side quests <b>${s.side}</b></span><span>Premios <b>${s.acts}</b></span>${s.bus?`<span>Bus <b>${s.bus}</b></span>`:''}${s.pen?`<span>Taxis <b>−${s.pen}</b></span>`:''}<span>Tiempo <b>${dur(elapsed(t))}</b></span></div>
       ${t.members.length?`<p style="opacity:.8;margin:0">${esc(t.members.join(' · '))}</p>`:''}
       ${Photos.teamStrip(t)}
       <div class="ladder">${order.slice(0,i).map((x,j) => `<span>${order.length-j}. ${esc(x.t.name)} · ${x.s.total}</span>`).join(' · ')}</div>

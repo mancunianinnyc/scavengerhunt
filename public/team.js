@@ -12,7 +12,7 @@ const MSG = {
   offline:'Sin conexión. Revisen los datos del celular e intenten de nuevo.',
   too_large:'El archivo es muy pesado. Intenten con una foto o nota de voz más corta.',
   not_started:'Todavía no han salido.', finished:'Ya terminaron el recorrido.',
-  not_checked_in:'Primero hagan check-in en la parada.', media_required:'Adjunten la foto o la nota de voz.',
+  not_checked_in:'Primero hagan check-in en la parada.', not_bus:'Primero elijan "En bus" para este tramo.', media_required:'Adjunten la foto o la nota de voz.',
 };
 const errMsg = e => MSG[e?.code] || 'Algo falló. Intenten de nuevo en un momento.';
 
@@ -80,9 +80,10 @@ function ctaCard(){
       ${redoNotice()}</section>`;
   }
   const key='s'+c.n;
-  if (c.legTaxi == null) return `<section class="c-cta" id="cta"><div class="t-eyebrow">Parada ${c.n} · Antes del reto</div>
+  if (legMode(c) == null) return `<section class="c-cta" id="cta"><div class="t-eyebrow">Parada ${c.n} · Antes del reto</div>
     <div class="t-ok">${ICON.check}<span>${ci.ok?'Check-in confirmado':'Check-in sin GPS'} · ${esc(ci.name)} · ${hm(ci.t)}</span></div>
     ${legQuestionHTML()}</section>`;
+  if (legMode(c) === 'bus' && (!c.bus || c.bus === 'rejected') && !busSkip[c.n]) return busSelfieHTML(c, ci);
   return `<section class="c-cta" id="cta"><div class="t-eyebrow">Parada ${c.n} · El reto</div>
     <div class="t-ok">${ICON.check}<span>${ci.ok?'Check-in confirmado':'Check-in sin GPS'} · ${esc(ci.name)} · ${hm(ci.t)}</span></div>
     ${c.puzzle ? puzzleHTML(c) : `<h3 class="t-h">${esc(c.ask)}</h3>${c.qm?`<p class="t-note">${esc(c.qm)}</p>`:''}
@@ -166,19 +167,36 @@ function saveName(){
   });
 }
 
-/* After every check-in: did this leg use a taxi? That answer is the taxi count. */
+/* After every check-in: how did they get here? Walk, bus (+5 with a selfie) or taxi (counts toward the limit). */
+const legMode = c => c ? (c.legMode !== undefined ? c.legMode : (c.legTaxi == null ? null : (c.legTaxi ? 'taxi' : 'walk'))) : null;
+let busSkip = {};
+try { busSkip = JSON.parse(sessionStorage.getItem('hunt-busskip') || '{}'); } catch(_) {}
 function legQuestionHTML(dark){
   const k = ST.taxis, next = k + 1, extra = next > ST.taxiLimit;
-  return `<div class="leg-q ${dark?'dark':''}"><h3 class="t-h">¿Llegaron en taxi?</h3>
-    <p class="t-p">Solo este tramo, desde la parada anterior. Llevan ${k} de ${ST.taxiLimit} taxis gratis.${extra?` Uno más resta ${HUNT.taxiPenalty} puntos.`:''}</p>
-    <div class="leg-btns"><button class="t-primary" data-leg="no" ${busy?'disabled':''}><span>No</span></button><button class="t-primary ${extra?'terra':'alt'}" data-leg="yes" ${busy?'disabled':''}><span>Sí, en taxi</span></button></div></div>`;
+  return `<div class="leg-q ${dark?'dark':''}"><h3 class="t-h">¿Cómo llegaron?</h3>
+    <p class="t-p">Solo este tramo, desde la parada anterior. En bus (TransMilenio o SITP) ganan <b>+${HUNT.busBonus} puntos</b> con una selfie del equipo. Llevan ${k} de ${ST.taxiLimit} taxis gratis.${extra?` Uno más resta ${HUNT.taxiPenalty} puntos.`:''}</p>
+    <div class="leg-btns leg3"><button class="t-primary" data-leg="walk" ${busy?'disabled':''}><span>A pie</span></button><button class="t-primary alt" data-leg="bus" ${busy?'disabled':''}><span>En bus</span></button><button class="t-primary ${extra?'terra':'alt'}" data-leg="taxi" ${busy?'disabled':''}><span>En taxi</span></button></div></div>`;
 }
-function answerLeg(taxi){
+function answerLeg(mode){
   let r = null;
-  act(async () => { r = await rpc('hunt_leg_taxi', {p_token:TOKEN, p_taxi:taxi}); await load(); }).then(() => {
+  act(async () => {
+    try { r = await rpc('hunt_leg_mode', {p_token:TOKEN, p_mode:mode}); }
+    catch (e) { if (mode === 'bus') throw e; r = await rpc('hunt_leg_taxi', {p_token:TOKEN, p_taxi:mode === 'taxi'}); }  // server not updated yet
+    await load();
+  }).then(() => {
     if (!r) return; celebration = null; render(); window.scrollTo(0,0);
-    toast(taxi ? `Taxi ${r.taxis} registrado${r.taxis > ST.taxiLimit ? ` (resta ${HUNT.taxiPenalty} pts)` : ''}.` : 'Anotado: sin taxi.');
+    toast(mode === 'taxi' ? `Taxi ${r.taxis} registrado${r.taxis > ST.taxiLimit ? ` (resta ${HUNT.taxiPenalty} pts)` : ''}.` : mode === 'bus' ? '¡En bus! Suban la selfie para los puntos extra.' : 'Anotado: a pie.');
   });
+}
+function busSelfieHTML(c, ci){
+  const key = 'b'+c.n;
+  return `<section class="c-cta" id="cta"><div class="t-eyebrow">Parada ${c.n} · Bonus de bus</div>
+    <div class="t-ok">${ICON.check}<span>${ci.ok?'Check-in confirmado':'Check-in sin GPS'} · ${esc(ci.name)} · ${hm(ci.t)}</span></div>
+    <h3 class="t-h">Selfie en el bus</h3>
+    <p class="t-p">${c.bus==='rejected'?'Los quizmasters no aceptaron la selfie. Prueben con otra. ':''}Una selfie del equipo en el bus o en la estación. Si los quizmasters la aprueban, suman +${HUNT.busBonus} puntos.</p>
+    ${dropInput(key, 'photo', 'Selfie del equipo en el bus')}<div class="err" id="err-${key}"></div>
+    <button class="t-primary terra" data-submit="${key}" ${busy?'disabled':''}><span>${busy?'Enviando…':'Enviar selfie'}</span>${arrow}</button>
+    <button class="t-link" id="busSkip" style="align-self:flex-start">No tenemos selfie · seguir sin el bonus</button></section>`;
 }
 
 /* Share card (finish screen): tap 1 builds the image, tap 2 opens the phone's share sheet. */
@@ -262,7 +280,7 @@ function overlay(){
         <span class="tr-shine" aria-hidden="true"></span>${[1,2,3,4].map(k => `<svg class="tr-spark k${k}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0C13 8 16 11 24 12 16 13 13 16 12 24 11 16 8 13 0 12 8 11 11 8 12 0Z"/></svg>`).join('')}
         <span class="tr-eyebrow">Side quest desbloqueado</span><b>${esc(c.side.name)}</b><span class="s">+${c.side.pts} pts · ${esc(sidePlace(c.side))}</span>
         <span class="tr-opt">Opcional · puntos extra si deciden desviarse</span></button>`:''}
-      ${c.taxiAsk && ST.current?.checkin && ST.current.legTaxi == null ? legQuestionHTML(true) : `<button class="t-primary" id="celGo"><span>${esc(c.cta)}</span>${arrow}</button>`}</div>`; }
+      ${c.taxiAsk && ST.current?.checkin && legMode(ST.current) == null ? legQuestionHTML(true) : `<button class="t-primary" id="celGo"><span>${esc(c.cta)}</span>${arrow}</button>`}</div>`; }
   if (modal) { const m = modal;
     return `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mH"><h3 id="mH">${esc(m.title)}</h3><p>${esc(m.body)}</p>
       <div class="btns"><button class="t-primary ${m.danger?'terra':''}" id="mYes"><span>${esc(m.yes)}</span>${arrow}</button><button class="sec" id="mNo">${esc(m.no)}</button></div></div></div>`; }
@@ -317,6 +335,7 @@ async function submit(key, resubmit){
     delete pending[key]; delete drafts[key];
     await load();
     if (resubmit) { screen = 'stop'; toast('Reenviado a los quizmasters.'); return; }
+    if (/^b\d+$/.test(key)) { screen = 'stop'; toast(`Selfie enviada: +${HUNT.busBonus} si los quizmasters la aprueban.`); return; }
     if (!isStop) { screen = 'sides'; toast('Enviado a los quizmasters.'); return; }
     const side = ST.sides.find(s => !prevSides.has(s.id));
     celebration = wasFinish
@@ -359,7 +378,8 @@ function bind(){
   const ns = $('#nmSave'); if (ns) ns.onclick = saveName;
   const ni = $('#nmInput'); if (ni) ni.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); saveName(); } };
   const ne = $('#nmEdit'); if (ne) ne.onclick = () => { editingName = true; render(); $('#nmInput')?.focus(); };
-  document.querySelectorAll('[data-leg]').forEach(b => b.onclick = () => answerLeg(b.dataset.leg === 'yes'));
+  document.querySelectorAll('[data-leg]').forEach(b => b.onclick = () => answerLeg(b.dataset.leg));
+  const bs = $('#busSkip'); if (bs) bs.onclick = () => { busSkip[curN()] = true; try { sessionStorage.setItem('hunt-busskip', JSON.stringify(busSkip)); } catch(_) {} render(); };
   const ph = $('#pzHelp'); if (ph) ph.onclick = () => { puz.help[curN()] = true; render(); };
   const smk = $('#shareMake'); if (smk) smk.onclick = makeShare;
   const sgo = $('#shareGo'); if (sgo) sgo.onclick = doShare;

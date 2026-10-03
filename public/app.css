@@ -489,3 +489,5 @@ td.total{font-family:var(--display);font-size:22px;color:var(--navy)}
 .fin-share{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;border-top:1px solid var(--line);padding-top:14px}
 .share-prev{width:100%;max-width:340px;border-radius:12px;box-shadow:0 10px 30px rgba(15,37,96,.25)}
 @media (prefers-reduced-motion:no-preference){.share-prev{animation:unearth .6s cubic-bezier(.2,1.3,.4,1) both}}
+.leg-btns.leg3{grid-template-columns:1fr 1fr 1fr}
+.leg-btns.leg3 .t-primary{padding-left:8px;padding-right:8px}
