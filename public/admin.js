@@ -300,9 +300,9 @@ function isEditing(){ const a = document.activeElement; return modal || lightbox
 
 /* ---------- reveal ---------- */
 function startReveal(){
-  const order = ranked().reverse(); let i = -1;
+  const order = ranked().filter(({t}) => t.depart != null).reverse(); let i = -1;  // teams that never set off (e.g. unused Equipo 5) are left out
   const host = document.createElement('div'); host.className = 'reveal'; document.body.appendChild(host);
-  const allIn = board().every(t => finishT(t));
+  const allIn = order.every(({t}) => finishT(t));
   const draw = () => {
     if (i < 0) host.innerHTML = `<div class="eyebrow">El Gran Scavenger Hunt de Bogotá</div><h2>Los resultados</h2><p style="opacity:.8;max-width:460px">${allIn?'Todos los equipos llegaron. Del último al primero.':'Not every team is in yet, so placement bonuses are provisional.'}</p><p class="rv-load" style="opacity:.6;font-size:13px;margin:0"></p><div class="ctrl"><button class="btn" id="rvNext">Empezar</button><button class="btn ghost" id="rvClose">Cerrar</button></div>`;
     else { const {t,s} = order[i]; const place = order.length - i;
