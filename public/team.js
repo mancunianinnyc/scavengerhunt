@@ -20,6 +20,7 @@ let TOKEN = null, ST = null, screen = 'stop', modal = null, celebration = null, 
 const pending = {}, drafts = {};
 
 function readToken(){
+  if (window.DEMO) return 'demo';
   const q = new URLSearchParams(location.search).get('t');
   try { if (q) localStorage.setItem('hunt-token', q); return q || localStorage.getItem('hunt-token'); } catch(e) { return q; }
 }
@@ -76,7 +77,7 @@ function ctaCard(){
       <button class="t-primary" id="checkinBtn" ${busy?'disabled':''}><span>${busy?'Buscando su ubicación…':'Estamos aquí · hacer check-in'}</span>${ICON.pin}</button>
       ${g.fail||g.miss?`<div class="geo-alt"><p class="t-p">${g.fail?'No pudimos leer su ubicación.':'¿Seguros que están en el lugar?'} Pueden hacer check-in sin GPS y los quizmasters lo confirman.</p>
         <button class="t-link" id="checkinManual" style="align-self:flex-start">Hacer check-in sin GPS</button></div>`:''}
-      ${ST.team.isTest?`<div class="demo-row"><span>Modo prueba · solo equipos de prueba</span><div><button id="simHere">Simular: estamos aquí</button><button id="simFar">Simular: lugar equivocado</button></div></div>`:''}
+      ${ST.team.isTest?`<div class="demo-row"><span>${window.DEMO ? 'Demo · ¿no están en Bogotá? Simulen el check-in' : 'Modo prueba · solo equipos de prueba'}</span><div><button id="simHere">Simular: estamos aquí</button><button id="simFar">Simular: lugar equivocado</button></div></div>`:''}
       ${redoNotice()}</section>`;
   }
   const key='s'+c.n;
@@ -172,7 +173,7 @@ function saveName(){
 const legMode = c => c ? (c.legMode !== undefined ? c.legMode : (c.legTaxi == null ? null : (c.legTaxi ? 'taxi' : 'walk'))) : null;
 let busSkip = {};
 /* Stops where a quizmaster runs live trivia: after check-in, a popup tells the team to find them first (event-day fix, 3 Oct). */
-const TRIVIA = {4:{who:'Ross', where:'en la entrada de la Quinta de Bolívar', what:'universidades y localidades de Bogotá'}, 8:{who:'Julia', where:'adentro de la biblioteca', what:'cuerpos de agua y figuras culturales'}};
+const TRIVIA = {4:{who:'Ross', where:'en la entrada de la Quinta de Bolívar', what:'universidades y localidades de Bogotá'}, 8:{who:'J', where:'adentro de la biblioteca', what:'cuerpos de agua y figuras culturales'}};
 let triviaSeen = {};
 try { triviaSeen = JSON.parse(localStorage.getItem('hunt-trivia-seen') || '{}'); } catch(_) {}
 function triviaPopupHTML(){

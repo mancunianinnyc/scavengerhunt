@@ -8,7 +8,7 @@ const Landing = (() => {
       edition:'Primera edición anual', title:'El Gran Scavenger Hunt de Bogotá',
       until:'para vernos en el letrero de Bogotá del Parque de los Hippies', d:'días', h:'horas', m:'min', s:'seg',
       live:'¡Es hoy! La búsqueda está en marcha.', liveSub:'Abran el link de su equipo para ver su pista.',
-      over:'Gracias por jugar.', overSub:'Nos vemos en la segunda edición.',
+      over:'Gracias por jugar.', overSub:'Nos vemos en la segunda edición. Mientras tanto: <a href="/demo">prueben la app</a> o <a href="/desde-lejos">jueguen desde lejos</a>.',
       when:'Cuándo', whenV:'Sábado 3 de octubre', whenS:'Llegada 9:45 · salida 10:00',
       where:'Dónde', whereV:'Letrero de Bogotá, Parque de los Hippies', whereS:'Chapinero. Lleguen a las 9:45 para armar los equipos.',
       teams:'Equipos', teamsV:'Cuatro personas por equipo', teamsS:'Nosotros los armamos en el parque',
@@ -19,13 +19,13 @@ const Landing = (() => {
       have:'¿Ya tienen su link?', haveS:'Si les llegó por WhatsApp, ábranlo desde ahí. O péguenlo aquí:',
       paste:'Pegar el link del equipo', go:'Abrir', badPaste:'Ese no parece un link del equipo. Cópienlo completo desde WhatsApp.',
       bad:'Este link no funciona. Pídanle uno nuevo a los quizmasters por WhatsApp.',
-      hosts:'Con sus quizmasters, Ross & Julia', lang:'English',
+      hosts:'Con sus quizmasters, Ross & J', lang:'English',
     },
     en: {
       edition:'First annual edition', title:'El Gran Scavenger Hunt de Bogotá',
       until:'until we meet at the Bogotá sign in Parque de los Hippies', d:'days', h:'hours', m:'min', s:'sec',
       live:'It’s today! The hunt is on.', liveSub:'Open your team’s link to see your clue.',
-      over:'Thanks for playing.', overSub:'See you at the second edition.',
+      over:'Thanks for playing.', overSub:'See you at the second edition. Meanwhile: <a href="/demo">try the app</a> or <a href="/desde-lejos">play from afar</a>.',
       when:'When', whenV:'Saturday 3 October', whenS:'Arrive 9:45 · start 10:00',
       where:'Where', whereV:'The Bogotá sign, Parque de los Hippies', whereS:'Chapinero. Arrive at 9:45 so we can make the teams.',
       teams:'Teams', teamsV:'Four people per team', teamsS:'We make the teams in the park',
@@ -36,7 +36,7 @@ const Landing = (() => {
       have:'Got your link?', haveS:'If it came on WhatsApp, open it from there. Or paste it here:',
       paste:'Paste your team link', go:'Open', badPaste:'That doesn’t look like a team link. Copy the whole link from WhatsApp.',
       bad:'This link doesn’t work. Ask the quizmasters for a new one on WhatsApp.',
-      hosts:'With your quizmasters, Ross & Julia', lang:'Español',
+      hosts:'With your quizmasters, Ross & J', lang:'Español',
     },
   };
   let lang = 'es', err = null, timer = 0, drawn = false;

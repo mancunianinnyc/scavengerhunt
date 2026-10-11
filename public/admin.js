@@ -173,10 +173,10 @@ function matrixPanel(){
     </tbody></table></div></section>`;
 }
 function rulesPanel(){
-  return `<section class="panel"><div class="panel-h"><h2>Scoring rules v1</h2><p>What this page calculates. <span class="prop">Proposed</span> items still need Julia's yes.</p></div>
+  return `<section class="panel"><div class="panel-h"><h2>Scoring rules v1</h2><p>What this page calculates. <span class="prop">Proposed</span> items still need sign-off.</p></div>
     <p class="formula">Total = 10 per approved stop (5 if the hint was used) + placement bonus + quiz points (max 70) + side quests + awards + 5 per bus leg (approved selfie) − taxi penalty ± manual</p>
     <div class="rules">
-      <div class="rule"><h5>Stops</h5><ul><li>10 pts per approved stop, 10 stops, max 100.</li><li>Arrival is a GPS check-in within 250–400 m. A no-GPS check-in is allowed and flagged here.<span class="prop">Proposed</span></li><li>Phrase answers auto-check. Photos and voice notes unlock the next clue on submit; a rejected proof scores 0 until resubmitted.</li><li>Using a hint: that stop scores 5 instead of 10 (Julia, 29 Sep).</li></ul></div>
+      <div class="rule"><h5>Stops</h5><ul><li>10 pts per approved stop, 10 stops, max 100.</li><li>Arrival is a GPS check-in within 250–400 m. A no-GPS check-in is allowed and flagged here.<span class="prop">Proposed</span></li><li>Phrase answers auto-check. Photos and voice notes unlock the next clue on submit; a rejected proof scores 0 until resubmitted.</li><li>Using a hint: that stop scores 5 instead of 10.</li></ul></div>
       <div class="rule"><h5>Placement</h5><ul><li>Clock runs from each team's own departure to its final-stop photo.</li><li>Fastest three: 50 / 30 / 20.</li><li>Finishing after 18:00 earns no placement bonus.<span class="prop">Proposed</span></li><li>Tie-break: faster elapsed time.</li></ul></div>
       <div class="rule"><h5>Quizzes</h5><ul><li>Universities 1 each. Localidades 1 each, doubled for all 20.</li><li>Water bodies 2 each. Poets 3, writers 2, musicians 1.</li><li>All four quizzes together count for at most 70.</li><li>3 minutes per quiz, phones away.<span class="prop">Proposed</span></li></ul></div>
       <div class="rule"><h5>Extras &amp; penalties</h5><ul><li>Coin 20 · Boyacá ticket 50 · Prom photo 20 · Drink can 10 · Theatron award 10.</li><li>Each taxi beyond ${taxiLimit()}: −10.</li><li>Bus leg (TransMilenio/SITP): +${HUNT.busBonus} each, with an approved team selfie. After every check-in teams answer walk / bus / taxi.</li></ul></div>

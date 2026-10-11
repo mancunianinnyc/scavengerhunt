@@ -497,3 +497,15 @@ td.total{font-family:var(--display);font-size:22px;color:var(--navy)}
 .sheet.trivia .tr-stop{font-family:var(--display);font-size:44px;line-height:1;color:var(--terracotta)}
 .sheet.trivia p b{color:var(--navy)}
 .tr-banner{background:var(--terracotta);color:#fff;border-radius:12px;padding:10px 12px;font-weight:600;font-size:15px}
+
+/* public demo (/demo): English guide bar + louder simulate buttons */
+.demo-bar{max-width:520px;margin:10px auto 0;background:var(--navy);color:var(--paper);border-radius:14px;padding:10px 14px;font-size:13.5px;line-height:1.45}
+.demo-bar .db-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.demo-bar b{font-weight:700}
+.demo-bar button{background:transparent;border:0;color:var(--gold);font-weight:600;padding:2px 0;text-align:left;text-decoration:underline;text-underline-offset:3px}
+.demo-bar .db-tog{white-space:nowrap;flex:none}
+.demo-bar .db-body p{margin:8px 0 0}
+.demo-bar a{color:var(--gold)}
+.demo-bar .db-ans{margin-top:8px;padding-top:8px;border-top:1px solid rgba(246,243,236,.25)}
+body[data-demo] .demo-row{border-color:var(--gold);background:var(--warn-bg)}
+body[data-demo] .demo-row button:first-child{background:var(--navy);color:var(--paper);border-style:solid;border-color:var(--navy)}

@@ -8,10 +8,17 @@
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "Referrer-Policy", "value": "no-referrer" },
-        { "key": "X-Frame-Options", "value": "DENY" },
         { "key": "Permissions-Policy", "value": "geolocation=(self), camera=(self), microphone=(self)" },
         { "key": "X-Robots-Tag", "value": "noindex" }
       ]
+    },
+    {
+      "source": "/((?!demo|desde-lejos).*)",
+      "headers": [{ "key": "X-Frame-Options", "value": "DENY" }]
+    },
+    {
+      "source": "/(demo|desde-lejos)",
+      "headers": [{ "key": "Content-Security-Policy", "value": "frame-ancestors 'self' https://rossgarlick.com https://www.rossgarlick.com" }]
     },
     {
       "source": "/(.*)\\.(js|css)",
